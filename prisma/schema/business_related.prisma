@@ -1,0 +1,55 @@
+model Business {
+  business_id Int                @id @default(autoincrement())
+  name        String
+  description String?
+  address     String?
+  phone       String?
+  website     String?
+  user_id     Int
+  user        User               @relation(fields: [user_id], references: [user_id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  categories  BusinessCategory[]
+  photos      Photo[]
+  reviews     Review[]
+  listings    ListingBusiness[]
+}
+
+model Category {
+  id         String             @id @default(cuid())
+  name       String             @unique
+  slug       String             @unique
+  businesses BusinessCategory[]
+}
+
+model BusinessCategory {
+  businessId Int
+  categoryId String
+  business   Business @relation(fields: [businessId], references: [business_id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([businessId, categoryId])
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  url        String
+  altText    String?
+  businessId Int
+  business   Business @relation(fields: [businessId], references: [business_id])
+  uploadedAt DateTime @default(now())
+}
+
+model Review {
+  review_id   Int      @id @default(autoincrement())
+  rating      Int // e.g., 1-5
+  comment     String?
+  user_id     Int
+  user        User     @relation(fields: [user_id], references: [user_id])
+  business_id Int
+  business    Business @relation(fields: [business_id], references: [business_id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([user_id, business_id]) // A user can review a business only once
+}

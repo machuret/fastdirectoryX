@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* Changed to white */
+    --foreground: 210 40% 10%; /* Dark gray #0a0a0a (approx) */
+
+    --card: 0 0% 100%; /* White #ffffff */
+    --card-foreground: 210 40% 10%; /* Dark gray #0a0a0a (approx) */
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 10%;
+ 
+    --primary: 220 9% 4%; /* Dark navy/black #0a0a0a (approx using a blueish hue for primary) */
+    --primary-foreground: 0 0% 100%; /* White #ffffff */
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215 20.2% 65.1%; /* Lighter gray #9ca3af (approx) */
+ 
+    --accent: 258 89% 75%; /* Purple accent #9b87f5 (approx) */
+    --accent-foreground: 210 40% 9.8%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 220 9% 4%; /* Matches primary for focus rings */
+ 
+    --radius: 0.5rem;
+
+    /* Custom Design System Variables */
+    --header-background: #1A1F2C;
+    --hero-background: #1A1F2C;
+    --cta-background: #7ABF3C; /* Green accent */
+    --button-primary-bg: #0a0a0a; /* Explicit primary button bg */
+    --button-primary-text: #ffffff; /* Explicit primary button text */
+
+    /* Text colors from design system */
+    --text-primary-dark: #0a0a0a;
+    --text-secondary-gray: #6b7280;
+    --text-light: #ffffff;
+    --text-muted-gray: #9ca3af; /* Same as --muted-foreground approx */
+  }
+ 
+  .dark {
+    --background: 0 0% 100%; /* Changed to white for dark mode */
+    --foreground: 210 40% 10%;     /* Changed to dark gray for dark mode */
+
+    --card: 0 0% 100%; /* Changed to white for dark mode */
+    --card-foreground: 210 40% 10%; /* Changed to dark gray for dark mode */
+ 
+    --popover: 0 0% 100%; /* Assuming popovers should also be white on white bg */
+    --popover-foreground: 210 40% 10%; /* Dark text for popovers */
+ 
+    --primary: 210 40% 10%; /* Dark primary for dark mode (e.g., for buttons against white bg) */
+    --primary-foreground: 0 0% 98%; /* Light text for dark primary */
+ 
+    --secondary: 217 32.6% 17.5%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 217 32.6% 17.5%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+ 
+    --accent: 258 80% 80%; /* Adjusted purple accent for dark mode */
+    --accent-foreground: 0 0% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 214.3 31.8% 91.4%; /* Light border, might need adjustment if too light on white */
+    --input: 0 0% 95%; /* Changed to light gray */
+    --input-foreground: 210 40% 10%; /* Dark text for input */
+    --ring: 210 40% 10%; /* Dark ring for dark mode */
+
+    /* Custom Design System Variables for Dark Mode */
+    --header-background: #121621; /* Slightly adjusted dark header */
+    --hero-background: #121621;
+    --cta-background: #8BCF5C; /* Lighter green for dark mode */
+    --button-primary-bg: #0a0a0a;
+    --button-primary-text: #ffffff;
+
+    /* Text colors for dark mode */
+    --text-primary-dark: #0a0a0a;
+    --text-secondary-gray: #6b7280;
+    --text-light: #0a0a0a;
+    --text-muted-gray: #9ca3af;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Raleway', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+  }
+  h1 { @apply text-4xl font-bold; } /* 2.25rem approx 36px */
+  h2 { @apply text-3xl font-semibold; } /* 1.875rem approx 30px */
+  h3 { @apply text-2xl font-medium; } /* 1.5rem approx 24px */
+  h4 { @apply text-xl font-medium; } /* 1.25rem approx 20px */
+
+  /* Line heights */
+  body {
+    line-height: 1.5;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.25; /* Adjusted for better visual balance */
+  }
+}
+
+@layer utilities {
+  .glow-text {
+    text-shadow:
+      0 0 2px hsl(var(--gold)),
+      0 0 2px hsl(var(--gold)),
+      0 0 2px hsl(var(--gold)),
+      0 0 10px hsl(var(--gold) / 0.6),
+      0 0 30px hsl(var(--gold) / 0.4),
+      0 0 60px hsl(var(--gold) / 0.2);
+  }
+  .glow-border {
+    box-shadow:
+      0 0 2px hsl(var(--gold)),
+      0 0 2px hsl(var(--gold)),
+      0 0 2px hsl(var(--gold)),
+      0 0 10px hsl(var(--gold) / 0.6),
+      0 0 30px hsl(var(--gold) / 0.4),
+      0 0 60px hsl(var(--gold) / 0.2);
+  }
+  .glow-line {
+    position: relative;
+  }
+  .glow-line::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 1px;
+    width: 0;
+    opacity: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--gold)) 25%,
+      hsl(var(--gold)) 75%,
+      transparent 100%
+    );
+    box-shadow:
+      0 0 2px hsl(var(--gold)),
+      0 0 2px hsl(var(--gold)),
+      0 0 2px hsl(var(--gold)),
+      0 0 10px hsl(var(--gold) / 0.6),
+      0 0 30px hsl(var(--gold) / 0.4),
+      0 0 60px hsl(var(--gold) / 0.2);
+    animation: glow-line 10s linear infinite;
+  }
+  .text-gradient-gold {
+    background: linear-gradient(
+      to right,
+      hsl(var(--gold) / 0.8),
+      hsl(var(--gold))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .text-gradient-silver {
+    background: linear-gradient(to right, #c0c0c0, #e0e0e0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .text-gradient-bronze {
+    background: linear-gradient(to right, #a5702a, #cd7f32);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}

@@ -1,0 +1,11 @@
+model Page {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String   @db.Text // Using @db.Text for potentially long content
+  isPublished     Boolean  @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

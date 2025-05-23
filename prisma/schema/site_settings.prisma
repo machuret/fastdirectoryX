@@ -1,0 +1,22 @@
+// Model for Homepage Site Settings (Key-Value Store)
+model SiteSetting {
+  key       String   @id @unique
+  value     String?  @db.Text
+  label     String? // User-friendly label for admin UI
+  group     String? // To group settings in admin UI (e.g., "hero", "seo", "layout")
+  type      String? // Hint for admin UI rendering (e.g., "text", "textarea", "boolean", "image_url")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Model for Partner/Client Logos for Carousel
+model PartnerLogo {
+  id        String   @id @default(cuid())
+  name      String
+  imageUrl  String   @db.Text
+  linkUrl   String?  @db.Text
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

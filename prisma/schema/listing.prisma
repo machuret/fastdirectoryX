@@ -1,0 +1,309 @@
+// Business Listings Core Models
+
+model ListingBusiness {
+  listing_business_id        Int                            @id @default(autoincrement())
+  business_id                Int // Foreign key to Business
+  user_id                    Int // Foreign key to User (owner/creator)
+  title                      String
+  slug                       String                         @unique // SEO-friendly URL slug
+  price_range                String? // VARCHAR(50)
+  category_name              String? // VARCHAR(255) - Might be derived or a main category, distinct from the many-to-many categories
+  address                    String?
+  neighborhood               String? // VARCHAR(255)
+  street                     String?
+  city                       String?
+  postal_code                String?
+  state                      String? // VARCHAR(100)
+  country_code               String? // CHAR(2)
+  phone                      String? // VARCHAR(50)
+  website                    String?                        @db.Text
+  description                String?                        @db.Text
+  descriptionOptimized       Boolean                        @default(false)
+  descriptionLastOptimizedAt DateTime?
+  faq                        Json? // New field for storing FAQ data
+  faqLastGeneratedAt         DateTime?                      @map("faq_last_generated_at") // New field for FAQ generation timestamp
+  latitude                   Decimal? // For precise location
+  longitude                  Decimal? // For precise location
+  place_id                   String?                        @unique // Google Place ID or similar, ensure it's optional if not always present
+  isFeatured                 Boolean                        @default(false) // For featured listings section
+  temporarily_closed         Boolean?                       @default(false)
+  permanently_closed         Boolean?                       @default(false)
+  operational_status         String? // e.g., OPERATIONAL, CLOSED_TEMPORARILY, CLOSED_PERMANENTLY
+  fid                        String? // VARCHAR(255)
+  cid                        String? // VARCHAR(255)
+  reviews_count              Int?                           @default(0)
+  images_count               Int?                           @default(0)
+  scraped_at                 DateTime?
+  google_food_url            String?                        @db.Text
+  url                        String?                        @db.Text
+  search_page_url            String?                        @db.Text
+  search_string              String?
+  language                   String? // VARCHAR(10)
+  rank                       Int?
+  is_advertisement           Boolean                        @default(false)
+  image_url                  String?                        @db.Text
+  kgmid                      String? // VARCHAR(255)
+  sub_title                  String? // VARCHAR(255)
+  located_in                 String? // VARCHAR(255)
+  plus_code                  String? // VARCHAR(255)
+  menu_url                   String?                        @db.Text
+  reserve_table_url          String?                        @db.Text
+  popular_times_live_text    String? // VARCHAR(100)
+  popular_times_live_percent Int?
+  // Relations
+  categories                 ListingBusinessCategory[]
+  openingHours               ListingOpeningHour[]
+  peopleAlsoSearch           ListingPeopleAlsoSearch[]
+  businessReviewTags         ListingBusinessReviewTag[]
+  businessAttributes         ListingBusinessAttribute[]
+  reviewsDistribution        ListingReviewsDistribution?
+  businessOrderLinks         ListingBusinessOrderLink[]
+  imageUrls                  ListingImageUrl[]
+  reviews                    ListingReview[]
+  popularTimesHistogram      ListingPopularTimesHistogram[]
+  businessImageCategories    ListingBusinessImageCategory[]
+  createdAt                  DateTime                       @default(now())
+  updatedAt                  DateTime                       @updatedAt
+  OpeningHours               OpeningHours[]
+  business                   Business                       @relation(fields: [business_id], references: [business_id])
+  user                       User                           @relation(fields: [user_id], references: [user_id])
+}
+
+model ListingCategory {
+  category_id    Int     @id @default(autoincrement())
+  category_name  String  @unique
+  slug           String? @unique // SEO-friendly slug, auto-generated if possible
+  description    String? @db.Text // For longer descriptions
+  seoTitle       String? // SEO-friendly title for category pages
+  seoDescription String? @db.Text // SEO-friendly description for category pages
+  imageUrl       String? @db.Text // URL for the category image
+
+  // Relations
+  businesses ListingBusinessCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model ListingBusinessCategory {
+  listing_business_id Int
+  listing_category_id Int
+
+  // Relations
+  business ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  category ListingCategory @relation(fields: [listing_category_id], references: [category_id])
+
+  @@id([listing_business_id, listing_category_id])
+}
+
+// Models for Image Categories related to Listings
+model ListingImageCategory {
+  image_category_id Int    @id @default(autoincrement())
+  category_name     String @unique
+
+  // Relations
+  listingBusinesses ListingBusinessImageCategory[]
+}
+
+model ListingBusinessImageCategory {
+  listing_business_id       Int
+  listing_image_category_id Int
+
+  // Relations
+  listingBusiness      ListingBusiness      @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingImageCategory ListingImageCategory @relation(fields: [listing_image_category_id], references: [image_category_id])
+
+  @@id([listing_business_id, listing_image_category_id])
+}
+
+// Model for Opening Hours related to Listings
+model ListingOpeningHour {
+  opening_hour_id     Int    @id @default(autoincrement())
+  listing_business_id Int
+  day_of_week         String
+  hours               String
+
+  // Relations
+  listingBusiness ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@index([listing_business_id])
+}
+
+// Model for "People Also Search" related to Listings
+model ListingPeopleAlsoSearch {
+  pas_id              Int      @id @default(autoincrement())
+  listing_business_id Int // The business this suggestion is related to
+  pas_category        String? // e.g., "People also search for"
+  pas_title           String
+  pas_reviews_count   Int?
+  pas_total_score     Decimal? // DECIMAL(3, 1)
+
+  // Relations
+  listingBusiness ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@index([listing_business_id])
+}
+
+// Models for Review Tags related to Listings
+model ListingReviewTag {
+  review_tag_id Int    @id @default(autoincrement())
+  tag_name      String @unique // e.g., "great service", "good food"
+  count         Int? // How many times this tag has been mentioned overall (optional)
+
+  // Relations
+  listingBusinesses ListingBusinessReviewTag[]
+}
+
+model ListingBusinessReviewTag {
+  listing_business_id   Int
+  listing_review_tag_id Int
+
+  // Relations
+  listingBusiness  ListingBusiness  @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingReviewTag ListingReviewTag @relation(fields: [listing_review_tag_id], references: [review_tag_id])
+
+  @@id([listing_business_id, listing_review_tag_id])
+}
+
+// Models for Additional Info / Attributes related to Listings
+model ListingAttribute {
+  attribute_id    Int     @id @default(autoincrement())
+  attribute_key   String // e.g., "Serves vegetarian dishes", "Identifies as women-owned"
+  attribute_value String? // Sometimes attributes are just keys (boolean true), sometimes they have values
+  icon_url        String? // Optional icon for the attribute
+
+  // Relations
+  listingBusinesses ListingBusinessAttribute[]
+}
+
+model ListingBusinessAttribute {
+  listing_business_id  Int
+  listing_attribute_id Int
+  value                String? // Specific value for this business if the attribute is not boolean, e.g., "Yes", "Limited options"
+
+  // Relations
+  listingBusiness  ListingBusiness  @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingAttribute ListingAttribute @relation(fields: [listing_attribute_id], references: [attribute_id])
+
+  @@id([listing_business_id, listing_attribute_id])
+}
+
+// Model for Reviews Distribution (one-to-one with ListingBusiness)
+model ListingReviewsDistribution {
+  reviews_distribution_id Int  @id @default(autoincrement())
+  listing_business_id     Int  @unique // Ensures one-to-one
+  one_star                Int?
+  two_stars               Int?
+  three_stars             Int?
+  four_stars              Int?
+  five_stars              Int?
+
+  // Relations
+  listingBusiness ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+}
+
+// Model for Order Providers
+model ListingOrderProvider {
+  order_provider_id Int    @id @default(autoincrement())
+  provider_name     String @unique // e.g., "Uber Eats", "DoorDash"
+
+  // Relations
+  businessOrderLinks ListingBusinessOrderLink[]
+}
+
+// Model for Business Order Links (Junction or direct links)
+model ListingBusinessOrderLink {
+  business_order_link_id    Int     @id @default(autoincrement())
+  listing_business_id       Int
+  listing_order_provider_id Int?
+  link_type                 String? // e.g., "delivery", "pickup"
+  url                       String  @db.Text
+
+  // Relations
+  listingBusiness      ListingBusiness       @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingOrderProvider ListingOrderProvider? @relation(fields: [listing_order_provider_id], references: [order_provider_id])
+
+  @@index([listing_business_id])
+  @@index([listing_order_provider_id])
+}
+
+// Model for general Image URLs for a ListingBusiness (gallery)
+model ListingImageUrl {
+  image_url_id        Int      @id @default(autoincrement())
+  listing_business_id Int
+  url                 String   @db.Text
+  description         String?
+  created_at          DateTime @default(now()) @map("created_at")
+  updated_at          DateTime @updatedAt @map("updated_at")
+
+  listingBusiness ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@index([listing_business_id])
+}
+
+// Model for Reviews specific to Listings (imported data)
+model ListingReview {
+  review_id                Int       @id @default(autoincrement())
+  listing_business_id      Int
+  reviewer_name            String?
+  reviewer_id              String? // If available from source
+  reviewer_avatar_url      String?   @db.Text
+  review_text              String?   @db.Text
+  rating                   Decimal? // DECIMAL(2,1) e.g., 4.5
+  published_at_string      String? // e.g., "2 weeks ago"
+  published_at_date        DateTime? // Parsed date, if possible
+  response_from_owner_text String?   @db.Text
+  response_from_owner_date DateTime?
+  review_link              String?   @db.Text
+  review_source            String? // e.g., "Google", "Yelp"
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Relations
+  listingBusiness ListingBusiness         @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  reviewImageUrls ListingReviewImageUrl[]
+}
+
+// Model for Image URLs associated with a ListingReview
+model ListingReviewImageUrl {
+  review_image_id Int      @id @default(autoincrement())
+  review_id       Int // Foreign key to ListingReview
+  url             String   @db.Text
+  description     String? // Optional description for the image
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relation to ListingReview
+  review ListingReview @relation(fields: [review_id], references: [review_id], onDelete: Cascade)
+
+  @@index([review_id])
+}
+
+// Model for Popular Times Histogram data
+model ListingPopularTimesHistogram {
+  histogram_id        Int    @id @default(autoincrement())
+  listing_business_id Int
+  day_of_week         String // e.g., "Monday"
+  hour_of_day         Int // 0-23
+  occupancy_percent   Int? // 0-100
+
+  // Relations
+  listingBusiness ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@unique([listing_business_id, day_of_week, hour_of_day]) // Ensure one entry per hour per day per business
+}
+
+model OpeningHours {
+  id          String          @id @default(cuid()) // This ID seems out of place if it's for ListingBusiness (BigInt). Consider if this model is correctly defined.
+  listing     ListingBusiness @relation(fields: [listing_id], references: [listing_business_id], onDelete: Cascade)
+  listing_id  Int // Changed from String to Int
+  day_of_week String
+  open_time   String?
+  close_time  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([listing_id, day_of_week])
+  @@index([listing_id])
+}

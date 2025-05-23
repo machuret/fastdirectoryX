@@ -1,0 +1,64 @@
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  user_id       Int               @id @default(autoincrement())
+  name          String?
+  email         String            @unique
+  password      String // Hashed password
+  emailVerified DateTime? // For NextAuth.js compatibility
+  image         String? // For NextAuth.js compatibility (e.g., profile picture)
+  status        UserStatus        @default(ACTIVE)
+  role          UserRole          @default(USER)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  businesses    Business[]
+  reviews       Review[]
+  listings      ListingBusiness[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+// NextAuth.js specific models
+model Account {
+  id                String  @id @default(cuid())
+  userId            Int 
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade) 
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int 
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [user_id], onDelete: Cascade) 
+
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

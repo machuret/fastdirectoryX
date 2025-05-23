@@ -1,0 +1,551 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Contents of user.prisma
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  user_id          Int               @id @default(autoincrement())
+  name             String?
+  email            String            @unique
+  password         String // Hashed password
+  emailVerified    DateTime? // For NextAuth.js compatibility
+  image            String? // For NextAuth.js compatibility (e.g., profile picture)
+  status           UserStatus        @default(ACTIVE)
+  role             UserRole          @default(USER)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  businesses       Business[]
+  reviews          Review[]
+  listings         ListingBusiness[]
+  accounts         Account[]
+  sessions         Session[]
+  ownership_claims OwnershipClaim[] // Relation to claims made by this user
+}
+
+// NextAuth.js specific models
+model Account {
+  id                String  @id @default(cuid())
+  userId            Int
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       Int
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model OwnFAQ {
+  id          String   @id @default(cuid())
+  question    String
+  answer      String   @db.Text
+  category    String? 
+  order       Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Contents of business_related.prisma
+model Business {
+  business_id Int                @id @default(autoincrement())
+  name        String
+  description String?
+  address     String?
+  phone       String?
+  website     String?
+  user_id     Int
+  user        User               @relation(fields: [user_id], references: [user_id])
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  categories  BusinessCategory[]
+  photos      Photo[]
+  reviews     Review[]
+  listings    ListingBusiness[]
+}
+
+model Category {
+  id         String             @id @default(cuid())
+  name       String             @unique
+  slug       String             @unique
+  businesses BusinessCategory[]
+  featureImageUrl String? // Added field for category feature image
+}
+
+model BusinessCategory {
+  businessId Int
+  categoryId String
+  business   Business @relation(fields: [businessId], references: [business_id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([businessId, categoryId])
+}
+
+model Photo {
+  id         String    @id @default(cuid())
+  url        String
+  altText    String?
+  sourceUrl  String?
+  mimeType   String?
+  businessId Int?
+  business   Business? @relation(fields: [businessId], references: [business_id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Review {
+  review_id   Int      @id @default(autoincrement())
+  rating      Int // e.g., 1-5
+  comment     String?
+  user_id     Int
+  user        User     @relation(fields: [user_id], references: [user_id])
+  business_id Int
+  business    Business @relation(fields: [business_id], references: [business_id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([user_id, business_id]) // A user can review a business only once
+}
+
+// Business Listings Core Models
+model ListingBusiness {
+  listing_business_id        Int       @id @default(autoincrement())
+  business_id                Int // Foreign key to Business
+  user_id                    Int? // Foreign key to User (owner/creator) - MAKE OPTIONAL
+  title                      String
+  slug                       String    @unique // SEO-friendly URL slug
+  price_range                String? // VARCHAR(50)
+  category_name              String? // VARCHAR(255) - Might be derived or a main category, distinct from the many-to-many categories
+  address                    String?
+  neighborhood               String? // VARCHAR(255)
+  street                     String?
+  city                       String?
+  postal_code                String?
+  state                      String? // VARCHAR(100)
+  country_code               String? // CHAR(2)
+  phone                      String? // VARCHAR(50)
+  website                    String?   @db.Text
+  description                String?   @db.Text
+  descriptionOptimized       Boolean   @default(false)
+  descriptionLastOptimizedAt DateTime?
+  faq                        Json? // Stores the FAQ data, e.g., array of {question, answer}
+  faqOptimized               Boolean   @default(false)
+  faqLastGeneratedAt         DateTime? // Tracks when the FAQ was last generated by AI
+  metaTitle                  String?   @db.VarChar(255)
+  latitude                   Decimal? // For precise location
+  longitude                  Decimal? // For precise location
+  place_id                   String?   @unique // Google Place ID or similar, ensure it's optional if not always present
+  isFeatured                 Boolean   @default(false) // For featured listings section
+  temporarily_closed         Boolean?  @default(false)
+  permanently_closed         Boolean?  @default(false)
+  operational_status         String? // e.g., OPERATIONAL, CLOSED_TEMPORARILY, CLOSED_PERMANENTLY
+  fid                        String? // VARCHAR(255)
+  cid                        String? // VARCHAR(255)
+  reviews_count              Int?      @default(0)
+  images_count               Int?      @default(0)
+  scraped_at                 DateTime?
+  google_food_url            String?   @db.Text
+  url                        String?   @db.Text
+  search_page_url            String?   @db.Text
+  search_string              String?
+  language                   String? // VARCHAR(10)
+  rank                       Int?
+  is_advertisement           Boolean   @default(false)
+  image_url                  String?   @db.Text
+  kgmid                      String? // VARCHAR(255)
+  sub_title                  String? // VARCHAR(255)
+  located_in                 String? // VARCHAR(255)
+  plus_code                  String? // VARCHAR(255)
+  menu_url                   String?   @db.Text
+  reserve_table_url          String?   @db.Text
+  popular_times_live_text    String? // VARCHAR(100)
+  popular_times_live_percent Int?
+
+  // Social Media Links
+  facebook_url  String? @db.Text
+  instagram_url String? @db.Text
+  linkedin_url  String? @db.Text
+  pinterest_url String? @db.Text
+  youtube_url   String? @db.Text
+  x_com_url     String? @db.Text
+
+  // Relations
+  categories              ListingBusinessCategory[]
+  peopleAlsoSearch        ListingPeopleAlsoSearch[]
+  businessReviewTags      ListingBusinessReviewTag[]
+  businessAttributes      ListingBusinessAttribute[]
+  reviewsDistribution     ListingReviewsDistribution?
+  businessOrderLinks      ListingBusinessOrderLink[]
+  imageUrls               ListingImageUrl[]
+  reviews                 ListingReview[]
+  popularTimesHistogram   ListingPopularTimesHistogram[]
+  businessImageCategories ListingBusinessImageCategory[]
+  openingHours            OpeningHours[]
+  createdAt               DateTime                       @default(now())
+  updatedAt               DateTime                       @updatedAt
+  business                Business                       @relation(fields: [business_id], references: [business_id])
+  user                    User?                          @relation(fields: [user_id], references: [user_id]) // Relation to User
+  ownership_claims        OwnershipClaim[] // Relation to claims
+}
+
+model ListingCategory {
+  category_id        Int                       @id @default(autoincrement())
+  category_name      String                    @unique
+  slug               String                    @unique // Added for category pages
+  parent_category_id Int?
+  parentCategory     ListingCategory?          @relation("ParentChildCategories", fields: [parent_category_id], references: [category_id])
+  childCategories    ListingCategory[]         @relation("ParentChildCategories") // Added for the other side of the self-relation
+  description        String?                   @db.Text
+  seoTitle           String?
+  seoDescription     String?                   @db.Text
+  imageUrl           String?                   @db.Text
+  businesses         ListingBusinessCategory[]
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+}
+
+model ListingBusinessCategory {
+  listing_business_id Int
+  listing_category_id Int
+  business            ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  category            ListingCategory @relation(fields: [listing_category_id], references: [category_id])
+
+  @@id([listing_business_id, listing_category_id])
+}
+
+model ListingImageCategory {
+  image_category_id Int                            @id @default(autoincrement())
+  category_name     String                         @unique
+  listingBusinesses ListingBusinessImageCategory[]
+}
+
+model ListingBusinessImageCategory {
+  listing_business_id       Int
+  listing_image_category_id Int
+  listingBusiness           ListingBusiness      @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingImageCategory      ListingImageCategory @relation(fields: [listing_image_category_id], references: [image_category_id])
+
+  @@id([listing_business_id, listing_image_category_id])
+}
+
+model ListingPeopleAlsoSearch {
+  pas_id              Int             @id @default(autoincrement())
+  listing_business_id Int
+  pas_category        String?
+  pas_title           String
+  pas_reviews_count   Int?
+  pas_total_score     Decimal?
+  listingBusiness     ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@index([listing_business_id])
+}
+
+model ListingReviewTag {
+  review_tag_id     Int                        @id @default(autoincrement())
+  tag_name          String                     @unique
+  count             Int?
+  listingBusinesses ListingBusinessReviewTag[]
+}
+
+model ListingBusinessReviewTag {
+  listing_business_id   Int
+  listing_review_tag_id Int
+  listingBusiness       ListingBusiness  @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingReviewTag      ListingReviewTag @relation(fields: [listing_review_tag_id], references: [review_tag_id])
+
+  @@id([listing_business_id, listing_review_tag_id])
+}
+
+model ListingAttribute {
+  attribute_id      Int                        @id @default(autoincrement())
+  attribute_key     String
+  attribute_value   String?
+  icon_url          String?
+  listingBusinesses ListingBusinessAttribute[]
+}
+
+model ListingBusinessAttribute {
+  listing_business_id  Int
+  listing_attribute_id Int
+  value                String?
+  listingBusiness      ListingBusiness  @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingAttribute     ListingAttribute @relation(fields: [listing_attribute_id], references: [attribute_id])
+
+  @@id([listing_business_id, listing_attribute_id])
+}
+
+model ListingReviewsDistribution {
+  reviews_distribution_id Int             @id @default(autoincrement())
+  listing_business_id     Int             @unique
+  one_star                Int?
+  two_stars               Int?
+  three_stars             Int?
+  four_stars              Int?
+  five_stars              Int?
+  listingBusiness         ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+}
+
+model ListingOrderProvider {
+  order_provider_id  Int                        @id @default(autoincrement())
+  provider_name      String                     @unique
+  businessOrderLinks ListingBusinessOrderLink[]
+}
+
+model ListingBusinessOrderLink {
+  business_order_link_id    Int                   @id @default(autoincrement())
+  listing_business_id       Int
+  listing_order_provider_id Int?
+  link_type                 String?
+  url                       String                @db.Text
+  listingBusiness           ListingBusiness       @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  listingOrderProvider      ListingOrderProvider? @relation(fields: [listing_order_provider_id], references: [order_provider_id])
+
+  @@index([listing_business_id])
+  @@index([listing_order_provider_id])
+}
+
+model ListingImageUrl {
+  image_url_id        Int             @id @default(autoincrement())
+  listing_business_id Int
+  url                 String          @db.Text
+  description         String?
+  created_at          DateTime        @default(now()) @map("created_at")
+  updated_at          DateTime        @updatedAt @map("updated_at")
+  listingBusiness     ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@index([listing_business_id])
+}
+
+model ListingReview {
+  review_id                Int                     @id @default(autoincrement())
+  listing_business_id      Int
+  reviewer_name            String?
+  reviewer_id              String?
+  reviewer_avatar_url      String?                 @db.Text
+  review_text              String?                 @db.Text
+  rating                   Decimal? // DECIMAL(2,1)
+  published_at_string      String?
+  published_at_date        DateTime?
+  response_from_owner_text String?                 @db.Text
+  response_from_owner_date DateTime?
+  review_link              String?                 @db.Text
+  review_source            String?
+  created_at               DateTime                @default(now())
+  updated_at               DateTime                @updatedAt
+  listingBusiness          ListingBusiness         @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+  reviewImageUrls          ListingReviewImageUrl[]
+}
+
+model ListingReviewImageUrl {
+  review_image_id Int           @id @default(autoincrement())
+  review_id       Int
+  url             String        @db.Text
+  description     String?
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+  review          ListingReview @relation(fields: [review_id], references: [review_id], onDelete: Cascade)
+
+  @@index([review_id])
+}
+
+model ListingPopularTimesHistogram {
+  histogram_id        Int             @id @default(autoincrement())
+  listing_business_id Int
+  day_of_week         String
+  hour_of_day         Int
+  occupancy_percent   Int?
+  listingBusiness     ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id], onDelete: Cascade)
+
+  @@unique([listing_business_id, day_of_week, hour_of_day])
+}
+
+model OpeningHours {
+  id          String          @id @default(cuid())
+  listing     ListingBusiness @relation(fields: [listing_id], references: [listing_business_id], onDelete: Cascade)
+  listing_id  Int
+  day_of_week String
+  open_time   String?
+  close_time  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([listing_id, day_of_week])
+  @@index([listing_id])
+}
+
+// Ownership Claim Model
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model OwnershipClaim {
+  claim_id            Int         @id @default(autoincrement())
+  listing_business_id Int
+  user_id             Int // User who is making the claim
+  claimant_name       String // Name provided in the form
+  company_name        String? // Company name from the form
+  claimant_email      String // Email from the form
+  claimant_phone      String? // Phone from the form
+  message             String      @db.Text // Message from the form
+  status              ClaimStatus @default(PENDING)
+  requested_at        DateTime    @default(now())
+  reviewed_at         DateTime? // When an admin reviewed it
+  admin_notes         String?     @db.Text // Optional notes by admin
+
+  listingBusiness ListingBusiness @relation(fields: [listing_business_id], references: [listing_business_id])
+  user            User            @relation(fields: [user_id], references: [user_id])
+
+  @@index([listing_business_id])
+  @@index([user_id])
+  @@index([status])
+}
+
+// Model for general site settings
+model SiteSettings {
+  id                   String    @id @default(cuid())
+  site_name            String?   // e.g., Your Awesome Website
+  site_tagline         String?   // e.g., The best place for X
+  logo_url             String?   // URL to the site logo
+  favicon_url          String?   // URL to the site favicon
+  contact_email        String?   // General contact email (might be different from admin_email for notifications)
+  admin_email          String?   // Email for receiving contact form submissions and admin notifications
+  contact_form_title   String?   // Title for the contact form page/section
+  contact_form_details String?   @db.Text // Additional details/text for the contact form page/section
+  footer_text          String?   @db.Text // Text for the site footer, e.g., copyright
+  maintenance_mode     Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([id]) // Ensures there's effectively a single row if you manage settings this way.
+                 // Alternatively, use a fixed ID like 'main_settings' if you only ever want one row.
+}
+
+// Model for Contact Form Submissions
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  status    String   @default("UNREAD") // e.g., UNREAD, READ, ARCHIVED
+}
+
+// Models for Dynamic Menu Management
+model Menu {
+  id        String     @id @default(cuid())
+  name      String     // e.g., "Main Navigation", "Footer Links"
+  location  String     @unique // e.g., "PRIMARY_HEADER", "FOOTER_COLUMN_1" - used by getMenuItemsForLocation
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model MenuItem {
+  id        String     @id @default(cuid())
+  label     String     // Text to display, e.g., "Home", "About Us"
+  url       String     // Link URL, e.g., "/", "/about"
+  target    String?    // e.g., "_blank" to open in new tab
+  order     Int        // To control the display order
+  icon      String?    // Optional: if you want to associate an icon (e.g., lucide icon name)
+  
+  menuId    String
+  menu      Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  parentId  String?
+  parent    MenuItem?  @relation("SubMenuItems", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  children  MenuItem[] @relation("SubMenuItems")
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([menuId])
+  @@index([parentId])
+}
+
+// Site Settings Model (as previously defined)
+model SiteSetting {
+  key       String   @id @unique
+  value     String?  @db.Text
+  label     String? // User-friendly label for admin UI
+  group     String? // To group settings in admin UI (e.g., "hero", "seo", "layout")
+  type      String? // Hint for admin UI rendering (e.g., "text", "textarea", "boolean", "image_url")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteLogo {
+  id        Int      @id @default(autoincrement())
+  purpose   String   @unique
+  imageUrl  String
+  altText   String?
+  targetUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Contents of page.prisma
+model Page {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  content         String   @db.Text // Using @db.Text for potentially long content
+  isPublished     Boolean  @default(false)
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Contents of partner.prisma
+model PartnerLogo {
+  id        String   @id @default(cuid())
+  name      String
+  imageUrl  String   @db.Text
+  linkUrl   String?  @db.Text
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

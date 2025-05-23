@@ -1,0 +1,1259 @@
+/*
+Theme Name: Sparker 1.6
+Theme URI: http://www.ansonika.com/sparker/
+Author: Ansonika
+Author URI: http://themeforest.net/user/Ansonika/
+
+[Table of contents] 
+
+1. SITE STRUCTURE and TYPOGRAPHY
+- 1.1 Typography
+- 1.2 Buttons
+- 1.3 Structure
+
+2. CONTENT
+- 2.1 Home
+- 2.2 About
+- 2.3 Listing
+- 2.4 Detail page
+- 2.5 Login/register
+- 2.6 Checkout
+- 2.7 Account
+- 2.8 Map styles
+- 2.9 Contacts
+- 2.10 404 page
+- 2.11 Media Gallery
+- 2.12 Faq
+- 2.13 Bookings
+- 2.14 Autocomplete Address
+- 2.15 OpenStreet Map
+
+3. COMMON
+- 3.1 Misc
+- 3.2 Accordion
+- 3.3 List
+- 3.4 Spacing
+- 3.5 Block reveal
+- 3.6 Cookie bar
+- 3.7 Sing In Modal
+- 3.8 Datepicker
+
+/*============================================================================================*/
+/* 1.  SITE STRUCTURE and TYPOGRAPHY */
+/*============================================================================================*/
+body {
+  text-align: right;
+  direction: rtl;
+}
+
+/* MAIN NAVIGATION */
+/* All styles for screen size over 992px*/
+@media only screen and (min-width: 992px) {
+  /* Menu */
+  .main-menu {
+    top: 8px;
+    right: inherit;
+    float: left;
+  }
+
+  /* Submenu*/
+  .main-menu ul ul {
+    text-align: right;
+    right: 3px;
+  }
+  .main-menu ul ul:before {
+    right: 10%;
+  }
+
+  .main-menu ul ul li:hover > a {
+    padding-right: 15px;
+    padding-left: 0;
+  }
+}
+/* Submenu 2nd level right */
+.main-menu ul ul.second_level_right {
+  left: 3px;
+  right: auto;
+}
+.main-menu ul ul.second_level_right:before {
+  left: 15%;
+  right: auto;
+}
+
+/* Submenu 3rd level */
+.main-menu ul ul li span a:hover {
+  padding-left: 10px;
+  padding-right: 18px;
+}
+.main-menu ul ul li span a:after {
+  content: "\34";
+  float: left;
+}
+
+.main-menu ul ul ul {
+  right: 100%;
+}
+.main-menu ul ul ul.third_level_left {
+  left: 100%;
+  right: auto;
+}
+
+/* Arrows top 3rd level*/
+.main-menu ul ul ul:before {
+  border-width: 0;
+  margin-left: 0;
+}
+
+/* All styles for screen size under 991px */
+@media only screen and (max-width: 991px) {
+  ul.mm-listview li a {
+    color: #444;
+  }
+}
+.main_title_3 {
+  text-align: right;
+  border-left: none;
+  border-right: 2px solid #e1e1e1;
+  padding-left: 0;
+  padding-right: 15px;
+}
+@media (max-width: 767px) {
+  .main_title_3 {
+    border-right: none;
+    padding-right: 0;
+  }
+}
+.main_title_3 span {
+  left: auto;
+  right: -2px;
+}
+.main_title_3 a {
+  right: auto;
+  left: 0;
+  bottom: 0;
+}
+.main_title_3 a:after {
+  margin-left: 0;
+  margin-right: 4px;
+  content: "\23";
+}
+
+/*-------- 1.2 Buttons --------*/
+a.btn_add,
+.btn_add {
+  right: 0;
+}
+
+.closebt {
+  right: 0;
+  left: 15px;
+}
+
+.btn_home_align {
+  text-align: left;
+}
+
+a.btn_map {
+  padding: 8px 10px 8px 12px;
+}
+a.btn_map:before {
+  content: "\e081";
+  margin-right: 0;
+  margin-left: 5px;
+}
+
+a.btn_filt, a.btn_filt_map {
+  padding: 8px 10px 8px 12px;
+}
+a.btn_filt:before, a.btn_filt_map:before {
+  content: "\67";
+  margin-right: 0;
+  margin-left: 5px;
+}
+@media (max-width: 767px) {
+  a.btn_filt:before, a.btn_filt_map:before {
+    left: auto;
+    right: 3px;
+  }
+}
+
+/*-------- 1.3 Structure --------*/
+/* Header */
+@media (max-width: 991px) {
+  header.header_in ul#top_menu {
+    right: auto;
+    left: 15px;
+  }
+}
+
+ul#top_menu {
+  float: left;
+  margin: 0 10px 0 0;
+}
+@media (max-width: 991px) {
+  ul#top_menu {
+    margin: -2px 10px 0 0;
+  }
+}
+ul#top_menu li {
+  float: right;
+  margin-right: 0;
+  margin-left: 15px;
+}
+ul#top_menu li:last-child {
+  margin-left: 0;
+}
+ul#top_menu li a.login, ul#top_menu li a.wishlist_bt_top {
+  text-align: right;
+}
+
+#logo {
+  float: right;
+}
+
+footer {
+  text-align: right;
+}
+@media (max-width: 575px) {
+  footer h3:after {
+    float: left;
+  }
+}
+footer ul li a i {
+  margin-right: 0;
+  margin-left: 10px;
+}
+footer ul.links li a:after {
+  content: "\23";
+  margin-left: 0;
+  margin-right: 5px;
+}
+footer ul.links li a:hover {
+  -webkit-transform: translate(-5px, 0);
+  -moz-transform: translate(-5px, 0);
+  -ms-transform: translate(-5px, 0);
+  -o-transform: translate(-5px, 0);
+  transform: translate(-5px, 0);
+}
+footer ul.contacts li {
+  padding-left: 0;
+  padding-right: 30px;
+}
+footer ul.contacts li i {
+  left: auto;
+  right: 0;
+}
+
+/* Newsletter footer*/
+#newsletter .loader {
+  right: auto;
+  left: -20px;
+}
+#newsletter input[type='email'] {
+  padding-left: 0;
+  padding-right: 15px;
+}
+#newsletter input[type='submit'] {
+  right: auto;
+  left: 0;
+  -webkit-border-radius: 3px 0 0 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -ms-border-radius: 3px 0 0 3px;
+  border-radius: 3px 0 0 3px;
+}
+
+.follow_us ul li {
+  margin-right: 0;
+  margin-left: 5px;
+}
+.follow_us ul li:last-child {
+  margin-left: 0;
+}
+
+ul#footer-selector li {
+  float: right;
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+/* Addtional links Footer */
+ul#additional_links {
+  float: left;
+}
+@media (max-width: 991px) {
+  ul#additional_links {
+    float: none;
+    margin-top: 10px;
+  }
+}
+ul#additional_links li {
+  margin-right: inherit;
+  margin-left: 15px;
+}
+ul#additional_links li:first-child {
+  margin-left: 20px;
+  margin-right: inherit;
+}
+ul#additional_links li:last-child {
+  margin-left: 0;
+}
+ul#additional_links li:after {
+  left: inherit;
+  right: 10px;
+}
+
+.styled-select {
+  padding-right: inherit;
+  padding-left: 35px;
+}
+.styled-select#lang-selector:after {
+  right: inherit;
+  left: 10px;
+}
+.styled-select#currency-selector:after {
+  right: inherit;
+  left: 10px;
+}
+.styled-select select {
+  padding-left: 0;
+  padding-right: 10px;
+}
+
+/* Wow on scroll event */
+.wow {
+  visibility: hidden;
+}
+
+/*============================================================================================*/
+/* 2.  CONTENT */
+/*============================================================================================*/
+/*-------- 2.1 Home/front page--------*/
+/* Home single hero */
+.hero_single.version_5 .wrapper {
+  text-align: right;
+}
+
+#custom-search-input .search-query {
+  padding-left: inherit;
+  padding-right: 20px;
+}
+@media (max-width: 575px) {
+  #custom-search-input .search-query {
+    padding-left: inherit;
+    padding-right: 15px;
+  }
+}
+#custom-search-input input[type='submit'] {
+  right: inherit;
+  left: -1px;
+  -webkit-border-radius: 3px 0 0 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -ms-border-radius: 3px 0 0 3px;
+  border-radius: 3px 0 0 3px;
+}
+
+.custom-search-input-2 input {
+  padding-left: inherit;
+  padding-right: 15px;
+  border-right: none;
+  border-left: 1px solid #d2d8dd;
+}
+.custom-search-input-2 input:focus {
+  border-right: none;
+  border-left: 1px solid #d2d8dd;
+}
+@media (max-width: 991px) {
+  .custom-search-input-2 input:focus {
+    border-right: none;
+    border-left: none;
+  }
+}
+.custom-search-input-2 i {
+  right: inherit;
+  left: 1px;
+  padding-right: inherit;
+  padding-left: 15px;
+}
+@media (max-width: 991px) {
+  .custom-search-input-2 i {
+    padding-right: inherit;
+    padding-left: 10px;
+  }
+}
+.custom-search-input-2 input[type='submit'] {
+  -webkit-border-radius: 3px 0 0 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -ms-border-radius: 3px 0 0 3px;
+  border-radius: 3px 0 0 3px;
+  margin-right: inherit;
+  margin-left: -1px;
+}
+.custom-search-input-2.inner input {
+  padding-left: inherit;
+  padding-right: 15px;
+  border-right: none;
+  border-left: 1px solid #d2d8dd;
+  font-weight: 500;
+}
+.custom-search-input-2.inner input:focus {
+  border-right: none;
+  border-left: 1px solid #d2d8dd;
+}
+@media (max-width: 991px) {
+  .custom-search-input-2.inner input:focus {
+    border-left: none;
+  }
+}
+.custom-search-input-2.inner .nice-select:after {
+  right: inherit;
+  left: 15px;
+}
+.custom-search-input-2.inner i {
+  padding-right: inherit;
+  padding-left: 10px;
+}
+.custom-search-input-2.inner input[type='submit'] {
+  right: inherit;
+  left: -1px;
+  -webkit-border-radius: 3px 0 0 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -ms-border-radius: 3px 0 0 3px;
+  border-radius: 3px 0 0 3px;
+}
+.custom-search-input-2.inner-2 {
+  margin: 0 0 20px 0;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  background: none;
+}
+.custom-search-input-2.inner-2 .form-group {
+  margin-bottom: 10px;
+}
+.custom-search-input-2.inner-2 input {
+  border: 1px solid #ededed;
+}
+.custom-search-input-2.inner-2 input[type='submit'] {
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -ms-border-radius: 3px;
+  border-radius: 3px;
+  margin-top: 10px;
+}
+.custom-search-input-2.inner-2 i {
+  padding-right: 10px;
+  line-height: 48px;
+  height: 48px;
+  top: 1px;
+}
+.custom-search-input-2.inner-2 .nice-select {
+  border: 1px solid #ededed;
+}
+
+ul.counter li {
+  border-right: none;
+  border-left: 1px solid #fff;
+  text-align: left;
+}
+ul.counter li:last-child {
+  border-left: none;
+  text-align: right;
+}
+
+.main_categories ul li {
+  float: right;
+  border-right: none;
+  border-left: 1px solid #d2d8dd;
+}
+.main_categories ul li:last-child {
+  border-left: none;
+}
+
+a.grid_item .info {
+  text-align: right;
+}
+
+a.box_news {
+  padding-left: inherit;
+  padding-right: 230px;
+}
+@media (max-width: 767px) {
+  a.box_news {
+    padding-left: inherit;
+    padding-right: 0;
+  }
+}
+a.box_news figure {
+  left: inherit;
+  right: 0;
+}
+a.box_news figure figcaption {
+  right: inherit;
+  left: 0;
+}
+a.box_news ul li {
+  margin-right: inherit;
+  margin-left: 5px;
+}
+a.box_news ul li:last-child {
+  margin-right: inherit;
+  margin-left: 0;
+}
+a.box_news ul li:after {
+  margin: 0 10px 0 0;
+}
+
+a.box_cat_home i {
+  right: inherit;
+  left: 10px;
+}
+a.box_cat_home ul li strong {
+  margin-right: inherit;
+  margin-right: 5px;
+}
+
+/*-------- 2.3 Listing --------*/
+#filters ul li small {
+  float: left;
+}
+
+#results h4 {
+  text-align: right;
+}
+
+.map_view#filters {
+  margin: 0 -15px;
+}
+
+.distance {
+  margin-bottom: 15px;
+}
+.distance span {
+  font-weight: 600;
+  color: #004dda;
+}
+
+.rangeslider__fill {
+  background: #004dda !important;
+}
+
+.filters_listing ul {
+  margin: 0;
+}
+.filters_listing ul li {
+  margin-right: inherit;
+  margin-left: 10px;
+}
+.filters_listing ul li:first-child {
+  float: right;
+}
+.filters_listing ul li:nth-child(2) {
+  float: right;
+  margin-left: 0;
+}
+.filters_listing ul li:nth-child(3) {
+  float: left;
+  margin-left: 0;
+}
+.filters_listing ul li:nth-child(4) {
+  float: left;
+}
+@media (max-width: 767px) {
+  .filters_listing ul li:nth-child(4) {
+    margin-left: 0;
+  }
+}
+.filters_listing.version_2 ul li {
+  margin-right: inherit;
+  margin-left: 10px;
+}
+.filters_listing.version_2 ul li:first-child {
+  float: right;
+}
+.filters_listing.version_2 ul li:nth-child(2) {
+  float: left;
+  margin-left: 0;
+}
+.filters_listing.version_2 ul li:nth-child(3) {
+  float: left;
+  margin-left: 10px;
+}
+@media (max-width: 767px) {
+  .filters_listing.version_2 ul li:nth-child(3) {
+    margin-left: 0;
+  }
+}
+.filters_listing.version_3 ul li {
+  margin-right: inherit;
+  margin-left: 10px;
+}
+.filters_listing.version_3 ul li:first-child {
+  float: right;
+}
+.filters_listing.version_3 ul li:nth-child(2) {
+  float: left;
+  margin-left: 0;
+}
+
+.score span {
+  margin-right: inherit;
+  margin-left: 8px;
+  text-align: inherit;
+}
+
+.strip a.wish_bt {
+  right: inherit;
+  left: 15px;
+}
+.strip figure small {
+  left: inherit;
+  right: 20px;
+}
+.strip .wrapper {
+  text-align: right;
+}
+.strip ul {
+  padding: 20px 20px 17px 15px;
+  text-align: right;
+}
+.strip ul li {
+  margin-right: inherit;
+  margin-left: 15px;
+}
+.strip ul li:last-child {
+  margin-left: 0;
+  float: left;
+}
+.strip.list_view a.wish_bt {
+  right: inherit;
+  left: 25px;
+}
+.strip.list_view .score {
+  margin-right: inherit;
+  margin-left: 10px;
+}
+.strip.list_view figure {
+  -webkit-border-radius: 3px 0 0 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -ms-border-radius: 3px 0 0 3px;
+  border-radius: 3px 0 0 3px;
+}
+@media (max-width: 991px) {
+  .strip.list_view figure {
+    -webkit-border-radius: 3px 3px 0 0;
+    -moz-border-radius: 3px 3px 0 0;
+    -ms-border-radius: 3px 3px 0 0;
+    border-radius: 3px 3px 0 0;
+  }
+}
+.strip.list_view figure small {
+  right: inherit;
+  left: 30px;
+}
+.strip.list_view ul {
+  padding: 20px 30px 20px 15px;
+}
+.strip.map_view a.wish_bt {
+  right: inherit;
+  left: 15px;
+}
+.strip.map_view .score {
+  margin-right: inherit;
+  margin-left: 10px;
+}
+@media (max-width: 991px) {
+  .strip.map_view figure {
+    -webkit-border-radius: 0 3px 3px 0;
+    -moz-border-radius: 0 3px 3px 0;
+    -ms-border-radius: 0 3px 3px 0;
+    border-radius: 0 3px 3px 0;
+  }
+}
+.strip.map_view figure small {
+  left: 20px;
+  right: inherit;
+}
+@media (max-width: 991px) {
+  .strip.map_view .wrapper {
+    padding-right: inherit;
+    padding-left: 45px;
+    padding-right: 20px;
+  }
+}
+.strip.map_view ul {
+  padding: 20px 15px 15px 5px;
+}
+
+a.address:before {
+  margin-right: inherit;
+  margin-left: 5px;
+}
+
+.cat_star i {
+  margin-right: 0;
+  margin-left: 2px;
+}
+
+.rating i {
+  margin-right: 0;
+  margin-left: 2px;
+}
+
+.box_list a.wish_bt {
+  right: inherit;
+  left: 15px;
+  top: 15px;
+}
+.box_list figure small {
+  right: inherit;
+  left: 20px;
+}
+@media (max-width: 991px) {
+  .box_list figure small {
+    right: inherit;
+    left: 15px;
+  }
+}
+.box_list ul {
+  padding: 20px 30px 20px 15px;
+}
+.box_list ul li {
+  margin-right: inherit;
+  margin-left: 15px;
+}
+.box_list ul li:last-child {
+  margin-left: 0;
+  float: left;
+}
+
+.switch-field label {
+  border-right: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+.switch-field label:first-of-type {
+  border-right: 0;
+}
+.switch-field label:last-of-type {
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+#filters_col {
+  text-align: right;
+}
+
+a#filters_col_bt:before {
+  right: auto;
+  left: 0;
+}
+
+.filter_type ul li small {
+  float: left;
+}
+
+.category_filter .container_radio {
+  margin-right: inherit;
+  margin-left: 15px;
+}
+
+a.btn_search_mobile {
+  float: left;
+}
+
+#search_mobile {
+  transform: translateX(-105%);
+  right: inherit;
+  left: 0;
+  background: #fff url(../img/bg_aside.svg) no-repeat center right;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+#search_mobile a.side_panel {
+  right: inherit;
+  left: 10px;
+}
+
+.search_mob a:before {
+  left: inherit;
+  right: 0;
+}
+
+/*-------- 2.4 Detail page --------*/
+.hero_in a.btn_photos {
+  left: inherit;
+  right: 20px;
+}
+
+.secondary_nav ul {
+  margin-bottom: 0;
+}
+.secondary_nav ul li {
+  margin-right: inherit;
+  margin-left: 20px;
+}
+
+.detail_title_1 ul {
+  float: left;
+}
+.detail_title_1 ul li {
+  margin-right: 0;
+  margin-left: 20px;
+}
+
+.reviews-container .review-box {
+  padding-left: inherit;
+  padding-right: 100px;
+}
+.reviews-container .rev-thumb {
+  left: inherit;
+  right: 0px;
+}
+
+.box_detail .price .score {
+  float: left;
+}
+.box_detail ul li i {
+  margin-right: inherit;
+  margin-left: 8px;
+}
+
+/* Booking form */
+.booking .form-group i {
+  right: inherit;
+  left: 1px;
+  padding-right: inherit;
+  padding-left: 10px;
+}
+.booking textarea {
+  padding-right: 10px;
+  padding-left: 25px;
+}
+
+.dropdown {
+  text-align: right;
+  padding: 15px 15px 0 10px;
+}
+.dropdown a:after {
+  right: inherit;
+  left: 0;
+}
+
+input.qtyplus {
+  right: inherit;
+  left: 3px;
+}
+
+input.qtyminus {
+  left: inherit;
+  right: 3px;
+}
+
+#qty_total {
+  left: inherit;
+  right: 2px;
+}
+
+ul.hotel_facilities li img {
+  margin-right: inherit;
+  margin-left: 10px;
+}
+
+.opening {
+  padding: 25px 80px 25px 25px;
+}
+.opening i {
+  left: inherit;
+  right: 25px;
+}
+.opening ul li span {
+  float: left;
+}
+
+ul.menu_list li {
+  padding: 5px 120px 25px 0;
+}
+ul.menu_list li h6 span {
+  float: left;
+}
+ul.menu_list li .thumb {
+  left: inherit;
+  right: 0;
+}
+
+/*Map lisiting --------------- */
+.map-right {
+  right: inherit;
+  left: 0;
+}
+
+/*-------- 2.5 Login/register --------*/
+#login aside, #register aside {
+  left: inherit;
+  right: 0;
+}
+#login aside form .form-group input, #register aside form .form-group input {
+  padding-left: inherit;
+  padding-right: 40px;
+}
+#login aside form .form-group i, #register aside form .form-group i {
+  left: inherit;
+  right: 12px;
+}
+
+/* Checkbox style */
+.container_check {
+  padding-left: inherit;
+  padding-right: 30px;
+}
+.container_check .checkmark {
+  left: inherit;
+  right: 0;
+}
+
+/* Radio buttons */
+.container_radio {
+  padding-left: inherit;
+  padding-right: 30px;
+}
+.container_radio .checkmark {
+  left: inherit;
+  right: 0;
+}
+
+/*-------- 2.6 Checkout --------*/
+.step h3:before {
+  border-left: none;
+  border-right: 10px solid #f8f8f8;
+  left: inherit;
+  right: 0;
+}
+.step h3:after {
+  border-left: none;
+  border-right: 10px solid #333;
+  right: inherit;
+  left: -10px;
+}
+.step h3 {
+  padding: 10px 20px 10px 12px;
+}
+@media (max-width: 767px) {
+  .step h3 {
+    margin-left: -15px;
+    margin-right: -15px;
+    padding-left: inherit;
+    padding-right: 15px;
+  }
+}
+
+.payments ul li a.info {
+  float: left;
+}
+.payments ul li a.info:after {
+  right: inherit;
+  left: 0;
+}
+
+/*-------- 2.7 Account --------*/
+.box_account h3 {
+  padding-left: inherit;
+  padding-right: 30px;
+}
+.box_account h3.client {
+  background: url(../img/user.svg) center right no-repeat;
+}
+.box_account h3.new_client {
+  background: url(../img/new_user.svg) center right no-repeat;
+}
+
+/*-------- 2.8 Map styles --------*/
+.marker_info {
+  text-align: right;
+}
+
+a.btn_infobox_detail {
+  right: inherit;
+  left: 15px;
+}
+
+.btn_infobox_get_directions, a.btn_infobox_phone {
+  padding-left: inherit;
+  padding-right: 20px;
+}
+
+.btn_infobox_get_directions:hover, a.btn_infobox_phone:hover {
+  color: #333;
+}
+
+.btn_infobox_get_directions:before {
+  left: inherit;
+  right: 0;
+}
+
+a.btn_infobox_phone:before {
+  left: inherit;
+  right: 0;
+}
+
+span.infobox_rate {
+  margin: -44px -20px 0 0;
+  float: right;
+  text-align: right;
+}
+
+/*-------- 2.10 404 page --------*/
+.search_bar_error input[type='text'] {
+  padding-left: inherit;
+  padding-right: 15px;
+}
+.search_bar_error input[type='submit'] {
+  right: inherit;
+  left: -1px;
+  -webkit-border-radius: 3px 0 0 3px;
+  -moz-border-radius: 3px 0 0 3px;
+  -ms-border-radius: 3px 0 0 3px;
+  border-radius: 3px 0 0 3px;
+}
+
+/*-------- 2.11 Faq --------*/
+ul#cat_nav li i {
+  margin: 2px 0 0 10px;
+  float: right;
+}
+ul#cat_nav li a:after {
+  right: inherit;
+  left: 15px;
+  -webkit-transform: rotate(180deg);
+  -moz-transform: rotate(180deg);
+  -o-transform: rotate(180deg);
+  -ms-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+ul#cat_nav li a span {
+  font-size: 11px;
+  font-size: 0.6875rem;
+  color: #999;
+}
+ul#cat_nav li a:hover, ul#cat_nav li a#active, ul#cat_nav li a.active {
+  color: #004dda;
+}
+
+.list_articles ul li {
+  float: right;
+  width: 45%;
+  margin-right: inherit;
+  margin-left: 45px;
+}
+.list_articles ul li i {
+  float: left;
+  margin-right: inherit;
+}
+@media (max-width: 991px) {
+  .list_articles ul li {
+    margin-right: inherit;
+    margin-left: 0;
+  }
+}
+
+ul.list_3 li {
+  padding-left: inherit;
+  padding-right: 20px;
+}
+
+/*-------- 2.13 Bookings --------*/
+.strip_booking h3 {
+  padding-left: inherit;
+  padding-right: 65px;
+}
+
+.strip_booking h3.hotel_booking:before, .strip_booking h3.restaurant_booking:before, .strip_booking h3.bars_booking:before {
+  left: inherit;
+  right: 0;
+}
+
+ul.info_booking {
+  padding: 15px 0 15px 25px;
+  border-right: none;
+  border-left: 1px solid #ededed;
+  text-align: left;
+}
+
+/*-------- 2.15 OpenStreet Map --------*/
+.leaflet-popup-content {
+  text-align: right;
+}
+.leaflet-popup-content span.infobox_rate {
+  margin: -39px -20px 0 0;
+  float: right;
+  text-align: right;
+}
+
+/*============================================================================================*/
+/* 3.  COMMON */
+/*============================================================================================*/
+/*-------- 3.1 Misc --------*/
+.mfp-arrow.mfp-arrow-right {
+  right: 15px;
+}
+
+.mfp-arrow.mfp-arrow-left {
+  left: 15px;
+}
+
+.circle-plus {
+  float: left;
+}
+
+.circle-plus .horizontal {
+  left: inherit;
+  right: 50%;
+  margin-left: inherit;
+  margin-right: -8px;
+}
+
+.circle-plus .vertical {
+  left: inherit;
+  right: 50%;
+  margin-left: inherit;
+  margin-right: -2px;
+}
+
+.pagination li {
+  float: right;
+}
+
+.box_faq {
+  padding-left: inherit;
+  padding-right: 50px;
+}
+.box_faq i {
+  left: inherit;
+  right: 0;
+}
+
+.form-control {
+  text-align: right;
+}
+
+/* Jquery select */
+.nice-select {
+  float: right;
+  padding-right: 15px !important;
+  padding-left: 27px !important;
+  text-align: right !important;
+}
+.nice-select:after {
+  right: inherit;
+  left: 15px;
+}
+.nice-select.right {
+  float: left;
+}
+.nice-select.right .list {
+  left: auto;
+  right: 0;
+}
+.nice-select .list {
+  height: 19vh;
+}
+.nice-select .option {
+  text-align: right;
+}
+
+/* Scroll top button */
+#toTop {
+  right: inherit;
+  left: 25px;
+}
+
+/*-------- 3.2 Accordion --------*/
+.accordion_2 .card-header h5 a i.indicator {
+  float: left;
+}
+
+/*-------- 3.3 List --------*/
+ul.list_ok li {
+  padding-left: inherit;
+  padding-right: 45px;
+}
+ul.list_ok li:before {
+  left: inherit;
+  right: 0;
+}
+
+ul.bullets li {
+  padding-left: inherit;
+  padding-right: 20px;
+}
+ul.bullets li:before {
+  left: inherit;
+  right: 0;
+}
+
+/*-------- 3.6 Cookie bar --------*/
+#cookie-bar a {
+  margin-left: inherit;
+  margin-right: 8px;
+}
+
+/*-------- 3.7 Sing In Modal --------*/
+#sign-in-dialog {
+  text-align: right;
+}
+
+/* Popup close button*/
+#sign-in-dialog .mfp-close,
+#lang-dialog .mfp-close {
+  left: 20px;
+  right: auto;
+}
+
+.small-dialog-header {
+  right: -30px;
+  left: auto;
+}
+
+#sign-in-dialog .form-group input.form-control {
+  padding-right: 40px !important;
+}
+
+#sign-in-dialog .form-group i {
+  right: 12px;
+}
+
+.my-toggle {
+  margin-left: 5px;
+  right: inherit !important;
+  left: 0 !important;
+}
+
+a.social_bt.facebook:before,
+a.social_bt.google:before,
+a.social_bt.linkedin:before {
+  right: 12px;
+  left: auto;
+}
+
+/*-------- 3.8 Datepicker --------*/
+.daterangepicker td.start-date {
+  border-radius: 0 4px 4px 0 !important;
+}
+
+.daterangepicker td.end-date {
+  border-radius: 4px 0 0 4px !important;
+}
+
+.daterangepicker .calendar-table .prev span {
+  transform: rotate(315deg) !important;
+  -webkit-transform: rotate(315deg) !important;
+}
+
+.daterangepicker .calendar-table .next span {
+  transform: rotate(-225deg) !important;
+  -webkit-transform: rotate(-225deg) !important;
+}
+
+.daterangepicker.rtl .calendar.left .calendar-table {
+  padding-left: 0 !important;
+  padding-right: 12px !important;
+}

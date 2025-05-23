@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<head lang="en">
+	<meta http-equiv="content-type" content="text/html;charset=utf-8">
+	<title></title>
+	<!-- Framework CSS -->
+	<link rel="stylesheet" href="assets/blueprint-css/screen.css" type="text/css" media="screen, projection">
+	<link rel="stylesheet" href="assets/blueprint-css/print.css" type="text/css" media="print">
+	<!--[if lt IE 8]><link rel="stylesheet" href="assets/blueprint-css/ie.css" type="text/css" media="screen, projection"><![endif]-->
+	<link rel="stylesheet" href="assets/blueprint-css/plugins/fancy-type/screen.css" type="text/css" media="screen, projection">
+	<style type="text/css" media="screen">
+		p, table, hr, .box { margin-bottom:25px; }
+		.box p { margin-bottom:10px; }
+		pre,code { font-family:"Consolas", Courier New, Courier, monospace; padding:15px; background:#f7f7f7; margin:0px 0px 18px; border:1px solid #e5e5e5; line-height:18px; color:#000 }
+code { padding:0px 3px; background-image:none; background:#f5f5f5; border:none }
+pre { white-space:pre-wrap; white-space:-moz-pre-wrap; white-space:-pre-wrap; white-space:-o-pre-wrap; word-wrap:break-word }
+	</style>
+</head>
+
+
+<body>
+	<div class="container">
+	  <h3 class="center alt"> Documentation by &ldquo;Ansonika&rdquo; v3.3</h3>
+		
+		<hr>
+		
+		<h1 class="center">&ldquo;SPARKER - HTML Site template&rdquo;</h1>
+		
+		<div class="borderTop">
+		  <div class="span-6 colborder info prepend-1">
+				<p class="prepend-top">
+					<strong>
+					Created: 12 OCTOBER 2018<br>
+                    Lat udpate:  18 Febraury 2025<br>
+					By: Ansonika</strong>
+			  </p>
+      </div><!-- end div .span-6 -->		
+	
+			<div class="span-12 last">
+				<p class="prepend-top append-0">Thank you for purchasing my theme.  If you are happy with the theme, please <strong>TAKE A MOMENT TO RATE IT</strong> from your DOWNLOADS PAGE.
+Thanks so much!</p>
+			</div>
+		</div><!-- end div .borderTop -->
+		
+		<hr>
+		
+		<h2 id="toc" class="alt">Table of Contents</h2>
+		<ol class="alpha">
+			<li><a href="#htmlStructure">HTML Structure</a></li>
+			<li><a href="#cssFiles">CSS Files, Structure and basic modifications</a></li>
+<li><a href="#php">PHP contact form, newsltetter form and plan a visit form</a></li>
+			<li><a href="#javascript">JavaScript</a></li>
+			<li><a href="#credits">Sources and Credit</a></li>
+             <li><a href="#updates">UPDATES</a></li>
+		</ol>
+   
+
+      <hr>
+        
+  <h3 id="htmlStructure"><strong>A) HTML Structure</strong> - <a href="#toc">top</a></h3>
+	  <p>  It's based on Boostrap 5 framework grid. It's ULTRA RESPONSIVE!!. 
+	  The item comes with SASS files for the primary styles.</p>
+  <hr>
+
+		<h3 id="cssFiles"><strong>B) CSS Files Structure and basic modfication</strong> - <a href="#toc">top</a>	  </h3>
+	  <p>The css files are inside the css folder (not minified and minified versions included) .To modify colors, typografy, button style ecc....find the realtive comment line in style.css. 
+      <strong>We reccomend to apply every changes in css/custom.css in order to makes future updates easly to apply.</strong>
+      Below how the file is organized:</p>
+<p>1. SITE STRUCTURE and TYPOGRAPHY<br>
+  - 1.1 Typography<br>
+  - 1.2 Buttons<br>
+  - 1.3 Structure</p>
+<p>2. CONTENT<br>
+  - 2.1 Home<br>
+  - 2.2 About<br>
+  - 2.3 Listing<br>
+  - 2.4 Detail page<br>
+  - 2.5 Login/register<br>
+  - 2.6 Map styles<br>
+  - 2.7 Contacts<br>
+  - 2.8 404 page <br>
+  - 2.9 Cart section<br>
+  - 2.10 Media Gallery<br>
+  - 2.11 Faq</p>
+<p>3. COMMON<br>
+  - 3.1 Misc<br>
+  - 3.2 Accordion<br>
+  - 3.3 List<br>
+  - 3.4 Spacing<br>
+  - 3.5 Block reveal<br>
+  - 3.6 Cookie bar<br>
+  - 3.7 Sing In Modal<br>
+  - 3.8 Input Switcher<br>
+  - 3.9 Datepicker<br>
+  - 3.10 Styles Switcher</p>
+<pre>
+<p><strong>Note<br></strong>Some pages required additional specific css in the header, for example in the blog page.<br>&lt;!-- SPECIFIC CSS --&gt;<br>&lt;link href=&quot;css/blog.css&quot; rel=&quot;stylesheet&quot;&gt;</p><p>The item comes with SASS  files.</p></pre>
+<p><strong>Change the logo<br>
+</strong>To change the logo, simply use your PNG24 file (suggested logo height is 36/40px). Below how is coded</p>
+<pre>&lt;div id=&quot;logo&quot;&gt;<br>	&lt;img src=&quot;img/logo.svg&quot; width=&quot;165&quot; height=&quot;35&quot; alt=&quot;&quot; class=&quot;logo_normal&quot;&gt;<br>	&lt;img src=&quot;img/logo_sticky.svg&quot; width=&quot;165&quot; height=&quot;35&quot; alt=&quot;&quot; class=&quot;logo_sticky&quot;&gt;<br>&lt;/div&gt;</pre>
+
+
+
+     <p><strong>Change the address of Google map in contact page</strong>: open mapmarker_func.js and change with your latitude and longitude + your full address. You can change also your map marker (that has to be png24); you can use also the psd provided in the psd folder.</p>
+ <pre>//set up markers <br>		var myMarkers = {&quot;markers&quot;: [<br>				{&quot;latitude&quot;: &quot;51.511732&quot;, &quot;longitude&quot;:&quot;-0.123270&quot;, &quot;icon&quot;: &quot;img/map-marker.png&quot;}<br>			]<br>		};<br>		<br>		//set up map options<br>		$(&quot;#map&quot;).mapmarker({<br>			zoom	: 14,<br>			center	: 'Covent Garden London', //YOUR FULL ADDRESS <br>			markers	: myMarkers<br>		});</pre>
+
+<strong>COMMON ISSUE ON GOOGLE MAP</strong> (if the Google map works locally but does not works once the site will be online)<br>
+  <pre>Google requires an api key for the Google map. They require a credit card for a new api..don’t worry 
+there cost is very very low quantity of views or free for a 
+particular limit <a href="https://cloud.google.com/maps-platform/pricing/sheet/" rel="nofollow">https://cloud.google.com/maps-platform/pricing/sheet/</a>
+<br>You can create your own "Standard api key" here <br>by clicking on &quot;GET KEY&quot; BUTTON (on Authentication for the standard API—API keys section), <br>and follow the steps.
+<a href="https://developers.google.com/maps/documentation/javascript/get-api-key#key" target="_blank">https://developers.google.com/maps/documentation/javascript/get-api-key#key</a>
+
+Here some additionale info on how to create an API KEY <a href="http://thegrue.org/google-map-javascript-api-key/">http://thegrue.org/google-map-javascript-api-key/</a><br><br>Then replace at the bottom of every page that use Google map, this line<br>
+&lt;script src=&quot;http://maps.googleapis.com/maps/api/js&quot;&gt;&lt;/script&gt; OR 
+&lt;script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"&gt;&lt;/script&gt;<br><br>with your api key included, like the example below<br>&lt;script src="http://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"&gt;&lt;/script&gt;<br><br>
+NOTE: if you apply an api key, the map locally does not load. You must upload your site.</pre>
+  
+<p><strong>Home with video header (fallback with a background image in tablets and mobile)</strong><br>
+ </p>
+<pre>1)Save you mp4 and ogv video in the video folder.The name of the files must match the datasource tag:<br>
+Example<br>data-teaser-source=&quot;video/intro&quot; (folder/name_files)=<br>intro.mp4<br>intro.ogv
+
+You can change also the opacity in style.css <br><br>video {<br>	position: absolute;<br>	top: 0;<br>	bottom: 0;<br>	left: 0;<br>	right: 0;<br>	opacity: 0.6;<br>}<br><br>2) To change the fallback background image for mobiles and tablets open css/style.css and 
+find this class (video on background is disable on tablet and mobiles due to bandwith consume limit):<br><br>@media (max-width: 1024px):<br>#hero_video{
+background: #ccc url(../img/home_section_1.jpg);
+background-size:cover;
+background-position: center bottom;}<br></pre>
+
+<br>
+<p><strong>Control the opacity of the header images</strong><br>
+<pre>You can control the opacity of the header images via css, in css/style.css change the opacity here:	
+	
+.hero_in.hotels_detail .wrapper {<br>  background-color: black;<br>  background-color: rgba(0, 0, 0, 0.6);<br>}<br>.hero_in.restaurant_detail .wrapper {<br>  background-color: black;<br>  background-color: rgba(0, 0, 0, 0.6);<br>}<br>.hero_in.shops_detail .wrapper {<br>  background-color: black;<br>  background-color: rgba(0, 0, 0, 0.6);<br>}
+
+or for the home page
+.hero_single.version_2 .wrapper {<br>  background-color: black;<br>  background-color: rgba(0, 0, 0, 0.45);<br>}</pre>
+
+<p><strong>Change the primary color<br>
+</strong>The theme comes with 12  predefined colors.</p>
+<pre><strong>How to change colors</strong><br>
+Add this line on every head page after custom.css 
+&lt;link href=&quot;css/color-green.css&quot; rel=&quot;stylesheet&quot;&gt;
+
+or simply copy the color styles (from example css/color-green.css) in css/custom.css <br>so you don't need to edit every page
+
+or play with SASS files variables</pre>
+
+<p><strong>Set up  site launch page located in site_launch folder</strong><br>
+  Open functions.js and find this line of code:</p>
+<pre><strong>SET THE DATE</strong><br>Open site_launch/js/functions.js and find this line.<br><br>var target = new Date(&quot;July 15 2014 13:30:00 GMT+0100&quot;); //replace with YOUR DATE
+
+<strong>SET NEWSLETTER EMAIL</strong><br>Open site_launch/assets/newsletter.php and find this commented code.<br><br>//$address = &quot;your email address&quot;;<br>$address = &quot;test@domain.com&quot;;<br></pre>
+
+<p><strong>How MAPS works</strong><br>
+  Open js/map.js and find this line of code:</p>
+<pre>Let's take as example the map used in single_tour.html page. Open js/map_tours.js.
+
+'Marker': [<br>			{<br>				type_point: 'Hotel',<br>				name: 'Hotel Concordia',<br>				location_latitude: 48.865633, <br>				location_longitude: 2.321236,<br>				map_image_url: 'img/thumb_map_single_hotel.jpg',<br>				rate: 'Superb | 7.5',<br>				name_point: 'Hotel Concordia',<br>				get_directions_start_address: '',<br>				phone: '+3934245255',<br>				url_point: 'detail-hotel.html'<br>			},
+
+type_point = category tour
+location_latitude= the latitude<br>location_longitude= the longitude
+map_image_url: the thumbnail inside the infobox
+rate= rate<br>name_point= the title in info box<br>description_point= description
+get_directions_start_address= get directions start address (leave empty or specify the start address)<br>phone: phone number
+url_point= the link in the button
+
+The marker/pins are located in img/pins folder.
+
+CHANGE THE DEFAULT COLOR STYLE OF THE MAP<br>You can add you onw style for example in js/map.js...look for this line:
+<br>styles: []
+
+inside of the square graphs, place you styles. You can find some nice premade styles 
+here https://snazzymaps.com/.<br>
+</pre>
+
+<p><strong>Address Autocomplete with Google API<br>
+</strong></p>
+<pre>
+IMPORTANT! It requires an API key (see the section Google Map API); locally the autocomplete does not works, you should apply the api key on the footer page script then upload the site to see it working. 
+
+&lt;script async defer src=&quot;https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&amp;libraries=places&amp;callback=initMap&quot;&gt;&lt;/script&gt;</pre>
+
+<p><strong>Leaflet OpenStreet Map + MapBox<br>
+</strong></p>
+<pre>
+The item comes with another Interactive Map Solution. It a bit different from the Google Map Api.
+Leaflet + OpenStreetMap is totally free; the implementation with Mapox requires registration and an API access token key (free untill 750,000 user views/requests; more info at <a href="https://www.mapbox.com/pricing/">https://www.mapbox.com/pricing/</a>)
+	
+Below we examine how it works, let's take as example listing-map.html file.
+
+1) leaflet_half_screen_func.js
+
+BELOW HOW TO CENTER THE MAP AND MAIN MAP SETTINGS
+var map = L.map('map', {<br>        <strong>center: [48.865633, 2.321236],</strong><br>        minZoom: 2,<br>        zoom: 13<br>    });
+
+MAPBOX ACCESS TOKEN (<a href="https://www.mapbox.com/">https://www.mapbox.com/</a> and create your access token)
+L.tileLayer( 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {<br>     attribution: '',<br>	   tileSize: 512,<br>     maxZoom: 18,<br>     zoomOffset: -1,<br>     id: 'mapbox/streets-v11',<br>     <strong>accessToken: 'Your Mapbox Access Token',</strong><br>     subdomains: ['a','b','c']<br>    }).addTo( map );
+
+
+2) leaflet_markers.js<br>In this file there are all the markers/points data:<br>
+&quot;id&quot;:1, //ID to use in the html page to view the infowindow of the point from the list<br>&quot;type_point&quot;:&quot;Hotel&quot;, //Type Point<br>&quot;location_latitude&quot;:48.865633, //Lat<br>&quot;location_longitude&quot;:2.321236, //Long<br>&quot;map_image_url&quot;:&quot;img/thumb_map_single_hotel.jpg&quot;, //Thumb <br>&quot;rate&quot;:&quot;Superb | 7.5&quot;, //Rate<br>&quot;name_point&quot;:&quot;Hotel name&quot;, //Name Point<br>&quot;get_directions_start_address&quot;:&quot;&quot;, //directions start address (leave empty or specify the start address)<br>&quot;phone&quot;:&quot;+3934245255&quot;, //Phone<br>&quot;url_point&quot;:&quot;detail-hotel.html&quot; //Specific poin url page
+
+3) How to use Leaflet + OpenStreetMap only<br>Just simply replace this line on footer 
+&lt;script src=&quot;js/leaflet_map/leaflet_half_screen_func.js&quot;&gt;&lt;/script&gt;
+
+into
+&lt;script src=&quot;js/leaflet_map/leaflet_no_mapbox_half_screen_func.js&quot;&gt;&lt;/script&gt;
+
+TOOL TO CREATE COORDINATES: <a href="https://www.latlong.net/convert-address-to-lat-long.html">https://www.latlong.net/convert-address-to-lat-long.html</a></pre>
+
+<p><strong>Datepicker doc and generator</strong><br> 
+      Please refer to this <a href="http://www.daterangepicker.com/">documentation</a></p>
+      
+      <p><strong>Menu Options</strong><br> 
+     Takes as reference menu-options.html to view the different submenu positions and third level submenu.</p>
+
+      
+<p><strong>THE GRID</strong><br> 
+      Please refer to this <a href="http://getbootstrap.com/">documentation Boostrap</a></p>
+      
+      <p><strong>KenBurns Slider</strong> (index-8.html)<br> 
+      Please refer to this <a href="https://vegas.jaysalvat.com/">documentation</a></p>
+      
+      <p><strong>Jarallax</strong>(index-9.html, index-10.html)<br> 
+      Please refer to this <a href="https://github.com/nk-o/jarallax">documentation</a></p>
+		<pre>Example of use 
+&lt;!-- Background YouTube Parallax --&gt; 
+&lt;div class="jarallax" data-jarallax data-video-src="https://www.youtube.com/watch?v=ab0TSkLe-E0"&gt;   
+Your content here... 
+&lt;/div&gt;
+
+&lt;!-- Background Vimeo Parallax --&gt; 
+&lt;div class="jarallax" data-jarallax data-video-src="https://vimeo.com/110138539"&gt;   
+Your content here... 
+&lt;/div&gt;
+
+&lt;!-- Background Self-Hosted Video Parallax --&gt; 
+&lt;div class="jarallax" data-jarallax data-video-src="mp4:./video/local-video.mp4,webm:./video/local-video.webm,ogv:./video/local-video.ogv"&gt;   
+Your content here... 
+&lt;/div&gt;
+
+Note: self-hosted videos require 1 video type only, not necessarily using all mp4, webm, and ogv. This is only needed for maximum compatibility with all browsers.       </pre>
+            
+      <hr>
+<br>
+      <h3 id="php"><strong>C) PHP files: Contact form</strong> - <a href="#php">top</a></h3>
+      <p>All the files you need are located in assets folder. If you need to change the allert messages open assets/validate.js. Below an example taken from contact.php; all the files are well commented<strong>.<br>
+      </strong><br>
+        <img src="assets/images/contacts.jpg" alt="" width="759" height="476" style="border:1px solid #ccc;">      </p>
+      </p>
+      <p><strong>Contact form<br>
+        </strong>It's the same logic and script of check newsletter. If you doesn't recieve the email please first check:<br>
+      1) Your spam folder<br>
+      2) If you hosting requires special settings (SMTP Authentication is not supported by the script)<br>
+      3) If your email  has to be managed from the same hosting provider<br>
+      4) Set the permission of the asset folder on your host to 755 your FTP client
+      </p>
+
+
+      <hr>
+<h3 id="javascript"><strong>D) JavaScript</strong> - <a href="#toc">top</a></h3>
+		
+	  <p>This theme use these Javascript (minified versions included). i've included the common theme scripts in a single file for a fast edit and load (or if you prefer you can find the same js in separate files in js folder).</p>
+      <p><strong>common_scripts.js content:
+      </strong>      
+      <ul>
+      <li>Jquery</li>
+      <li>Boostrap.js</li>
+      <li>Wow.js</li>
+      <li>Owl.carousel.js</li>
+      <li>MagnificPopup.js</li>
+      <li>Theia-sticky-sidebar.js</li>
+      <li>ResizeSensor.js</li>
+      <li>Sticky-kit.js</li>
+       <li>jQuery Mmenu</li>
+       <li>jQuery Show hide passoword</li>
+       <li>jQuery Nice Select </li>
+       <li>Rangeslider</li>
+      </ul>
+      </p>
+<hr>
+		
+		<h3 id="credits"><strong>E) Sources and Credits</strong> - <a href="#toc">top</a></h3>
+		
+	  <p>I've used the following images, icons or other files as listed. For the js listed below, you can find the <strong>more documentation</strong> on the relative sites.
+		
+	  <ul>
+        <li><a href="https://getbootstrap.com/">Bootstrap</a></li>
+        <li><a href="http://mynameismatthieu.com/WOW">Wow</a></li>
+        <li><a href="http://daneden.github.io/animate.css/">Animate.css</a></li>
+        <li><a href="http://jquery.com/">Jquery</a></li>
+        <li><a href="http://owlgraphic.com/owlcarousel/">Owl carousel</a></li>
+        <li><a href="http://www.primebox.co.uk/projects/jquery-cookiebar/">Jquery Cookie bar</a></li>
+        <li><a href="http://www.daterangepicker.com/">Datepicker</a></li>
+        <li><a href="http://leafo.net/sticky-kit/">Sticky horizontal</a></li>
+        <li><a href="https://github.com/WeCodePixels/theia-sticky-sidebar">Theia Sticky Sidebar </a></li>
+        <li><a href="https://modernizr.com/">Modernizr</a></li>
+        <li><a href="http://dimsemenov.com/plugins/magnific-popup/">Magnific popup</a></li>
+        <li><a href="https://github.com/FrDH/jQuery.mmenu">MMenu mobile menu</a></li>
+        <li><a href="https://github.com/andreruffert/rangeslider.js">Range slider</a></li>
+        <li><a href="http://isotope.metafizzy.co">Isotope</a></li>
+        <li><a href="https://vegas.jaysalvat.com/">Kenburns Slider</a></li>
+        <li><a href="https://github.com/nk-o/jarallax">Parallax Videos/images - Jarallax</a></li>
+        <li><a href="https://fontello.com/">Icon fonts Fontello</a></li>
+         <li><a href="https://github.com/olimsaidov/pixeden-stroke-7-icon">Icon fonts Pixeden Stroke</a></li>
+         <li><a href="https://www.elegantthemes.com/blog/resources/elegant-icon-font">Elegant Icon Font </a></li>
+         <li><a href="https://themify.me/themify-icons">Themify icons</a></li>
+         <li><a href="https://www.iconfinder.com/">Icon Finder</a></li>
+	  </ul>
+<p>Images and Videos are not included. Envato for copyright rules, does not permit to include those assets in the downloadable file. They are only for demo purpose. Below the sources sites:</p>
+        <ul>
+        <li><a href="https://pixabay.com/">Pixabay</a></li>
+        <li><a href="https://unsplash.com/">Unsplash</a></li>
+        <li><a href="https://www.freepik.com/">Freepik</a></li>
+ <li><a href="https://www.vectorstock.com/">Vectorstock</a></li>
+        </ul>
+        
+        <hr>
+        <h3 id="updates"><strong>E) Updates</strong> - <a href="#toc">top</a></h3>
+
+        <h4>Version 3.3 18 Febraury 2025</h4>
+    <ul>
+          <li>Updated Documentation (Support Section)</li>
+      </ul>
+
+
+        <h4>Version 3.2 5 November 2024</h4>
+      <ul>
+          <li>Fix http to https for some links in the js files related the Google Map and Leaflet map. Files affected: js/map_single_hotel.js, js/map_single_restaurant.js, js/map_single_shop.js, js/map.js, js/listing_map.js js/leaflet_map/leaflet_half_screen_func.js, js/leaflet_map/leaflet_func.js, js/leaflet_map/leaflet_no_mapbox_half_screen_func.js, js/leaflet_map/leaflet_no_mapbox_func.js</li>
+          <li>Set as default OpenstreetMap + Leaflet</li>
+      </ul>
+
+         <h4>Version 3.1 17 September 2024</h4>
+    <ul>
+          <li>Updated Documentation</li>
+      </ul>
+
+        <h4>Version 3.0 18 June 2024</h4>
+    <ul>
+          <li>Updated Bootstrap Library v 5.3.3</li>
+      </ul>
+<pre>HOW TO UPDATE FROM PREVIOUS VERSION:
+1) Update the following files: css/bootstrap.css, css/bootstrap.min.css, js/common_scripts.js
+
+</pre>
+
+
+         <h4>Version 2.9 15 March 2024</h4>
+    <ul>
+          <li>Added Bootstrap Icons Font</li>
+      </ul>
+<pre>HOW TO UPDATE FROM PREVIOUS VERSION:
+1) Copy and paste css/bs-icon-font folder
+2) Update the following files: css/vendors.css + css/vendors.unminified.css
+3) Update the HTML code for #social section in every footer pages
+</pre>
+        
+         <h4>Version 2.8 11 December 2023</h4>
+    <ul>
+          <li>Updated Documentation</li>
+      </ul>
+
+
+         <h4>Version 2.7 6 September 2023</h4>
+      <ul>
+            <li>Updated jQuery Library to 3.7.1</li>
+      </ul>
+ <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+Updated jQuery Library to 3.7.1
+Update the following file: js/common_scripts.js (same for the rtl version)</pre>
+        
+         <h4>Version 2.6 10 May 2023</h4>
+      <ul>
+        	<li>Updated Bootstrap Library to 5.2.3</li>
+            <li>Updated jQuery Library to 3.6.4</li>
+      </ul>
+ <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) Updated Bootstrap Library to 5.2.3
+Update the following files: css/bootstrap.css, css/bootstrap.min.css, js/common_scripts.js (same for the rtl version)
+
+2) Updated jQuery Library to 3.6.4
+Update the following file: js/common_scripts.js (same for the rtl version)</pre>
+
+      <h4>Version 2.5 30 January 2023</h4>
+      <ol>
+        	<li>Updated Jquery Library to 3.6.3</li>
+            <li>Fix an opacity issue on index-2.html</li>
+            <li>Added Kenburns Slider</li>
+            <li>Added Jarallax Video Hero (Youtube/Vimeo/Self Hosted Video)</li>
+      </ol>
+ <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) Update the following files: js/common_scripts.js
+
+2) Update the following files: css/style.css or update the class at line 1704 .header-video video 
+
+3) Takes as reference index-8.html. Copy the folliwng files in the respective folders: 
+- css/vegas.css 
+- css/vegas.min.css 
+- js/vegas.js 
+- js/vegas.min.js
+- img/kenburns_slider
+
+Update css/style.css or copy the new section /* Home Kenburns and Jarallax */
+
+More info about futher settings and options of the slider <a href="https://vegas.jaysalvat.com/">https://vegas.jaysalvat.com/ </a>
+
+4) Takes as reference index-9.html + index-10.html. Copy the folliwng files in the respective folders: 
+- js/jarallax.js
+- js/jarallax.min.js
+- js/jarallax-video.js
+- js/jarallax-video.min.js
+- video/new video files
+</pre>
+         <h4>Version 2.4 8 November 2022</h4>
+      <ul>
+        	<li>Updated Bootstrap Library to 5.2.2</li>
+      </ul>
+ <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+Updated Bootstrap Library to 5.2.2
+1) Update the following files: css/bootstrap.css, css/bootstrap.min.css, js/common_scripts.js (same for the rtl version)</pre>
+
+
+      <h4>Version 2.3 8 August 2022</h4>
+      <ul>
+        	<li>Removed "get_magic_quotes_gpc" php function deprecated for latest PHP versions</li>
+      </ul>
+ <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+Update the following files (same for the RTL version): assets/contact.php + contact_detail.php or delete the following lines of code 
+
+if(get_magic_quotes_gpc()) {
+	$message_contact = stripslashes($message_contact);
+}</pre>
+        
+         <h4>Version 2.2 4 May 2022</h4>
+      <ul>
+        	<li>Updated Bootstrap Library to 5.1.3</li>
+      </ul>
+ <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+Updated Bootstrap Library to 5.1.3
+1) Update the following files: css/bootstrap.css, css/bootstrap.min.css, js/common_scripts.js (same for the rtl version)</pre>
+
+      <strong>v.2.1 14 January 2022</strong>
+      <ol>
+        <li>Updated Documentation</li>
+        
+        </ol>
+        
+        
+          <strong>v.2.0 17 August 2021</strong>
+      <ol>
+        <li>Updated jQuery Library</li>
+        <li>Updated to Boostrap 5 the main site</li>
+        <li>Updated to Boostrap 4.6 the Admin section (at the moment we can upgrade to BS5 due some application are still not supported...in Particular Summernote visual text editor).</li>
+        <li>Date range picker added "Disabled past dates" feature.</li>
+        </ol>
+      <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) Updated jQuery Library (Please update js/common_scripts.js)
+
+2) Updated to Boostrap 5 the main site. Update the following files: 
+- css/bootstrap.css
+- css/bootstrap.min.css
+- css/style.css (classes updated aprox: .form-group, .form-control, .custom-search-input-2.inner, hr, .strip.list_view figure a img, .strip.list_view .wrapper)
+- js/functions.js (//Footer collapse script)
+- js/common_scripts.js 
+
+NOTE: you have to apply some changes in the html code of the page since in BS5 there are small differences. 
+Below a short list of the changes related to the template or see here with more details <a href="https://getbootstrap.com/docs/5.0/migration/">https://getbootstrap.com/docs/5.0/migration/</a> 
+We suggest to use the find and replace function (carefully) of your html editor.   
+
+MODALS
+data-modal &gt; data-bs-modal
+data-target &gt; data-bs-target
+data-dismiss &gt; data-bs-dismiss
+
+COLLAPSE AND TOGGLES 
+data-toggle=.. &gt; data-bs-toggle=... 
+data-toggle=... &gt; data-bs-toggle=...  
+
+UTILITIES 
+.float-left &gt; .float-start 
+.float-right &gt; .float-end 
+.text-left &gt; .text-start 
+.text-right&gt; .text-end 
+.no-gutter &gt; .g-0
+.pr &gt; .pe
+.pl &gt; .ps
+
+META TAGS (only necessary below)
+&lt;meta charset=&quot;utf-8&quot;&gt;<br>&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+
+3) Updated to Boostrap 4.6 the Admin section
+
+- Remove data parent from the main nav
+- Update the following folder: vendor/bootstrap
+- Update js/admin.js (// Configure tooltips for collapsed side navigation)
+
+4) Date range picker added "Disabled past dates" feature.
+Takes as reference one of the page tha use the picker and see the new property added in the footer script:&quot;minDate:new Date(),&quot;</pre>
+        
+         <strong>v.1.9 6 March 2021</strong>
+      <ol>
+        <li>Fixed 2 broken/wrong links in the listing page (layout switch buttons).</li>
+        </ol>
+        <strong>v.1.8 22 October 2020</strong>
+      <ol>
+        <li>Mapbox Map Styles needs to be updated (Old Style has been removed)</li>
+        </ol>
+        <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) Update the following files js/leaflet_map/leaflet_single_func.js, js/leaflet_map/leaflet_func.js, js/leaflet_map/leaflet_half_screen_func.js</pre>
+        <strong>v.1.7 2 September 2020</strong>
+        <ol>
+        <li>Updated Bootstrap Version</li>
+        <li>Updated Jquery Version to 3.5x</li>
+        <li>Updated Owl Carousel Script</li>
+      </ol>
+        <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) Update the following files css/bootstrap.css, css/bootstrap.min.css, js/common_scripts.js
+
+2) Update js/common_scripts.js, and js/functions.js in detail those sections:
+// Forgot Password + // Search Mobile horizontal + // Account switch client type
+
+3) Update js/common_scripts.js, css/vendors.css, css/vendors.unminified.css</pre>
+
+      <strong>v.1.6 6 May 2020</strong>
+      <ol>
+        <li>Updated Bootstrap Library</li>
+        <li>Added Google Address Autocomplete</li>
+        <li>Added OpenstreetMap</li>
+        <li>Updated Google font string</li>
+        <li>Fixed header menu third level last child border</li>
+        <li>Added RTL Version</li>
+        <li>Added 2 more detail page</li>
+</ol>
+<pre>HOW TO FIX FROM PREVIUOS VERSIONS
+
+1) Updated BootStrap Library &gt; 	
+Update the following files: bootstrap.css + bootstrap.min.css + common_scripts.js
+
+2) Added Google Address Autocomplete &gt;	
+New section in css/style.css &gt; 2.14 Autocomplete Address Search + takes a reference index-7.html (in particular the footer script)
+
+3) Added Leaflet Open Street Map (+Mapbox) &gt;	
+A) New section in css/style.css &gt; 2.16 OpenStreet Map 
+B) New Folder in js folder &gt; leaflet_map
+
+4) Updated Google font string &gt;
+On each HTML file (with your editor use find and replace function) replace this line 
+&lt;link href=&quot;https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&quot; rel=&quot;stylesheet&quot;&gt;
+
+into
+&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap&quot; rel=&quot;stylesheet&quot;&gt;	
+
+5) Fixed header menu third child &gt;
+New style in style.css aprox line 252
+
+.main-menu ul ul ul li:last-child a {<br>  border-bottom: none !important;<br>}
+
+6) RTL version &gt;
+Take as reference the html_rtl folder. It's the same of the ltr folder except for dedicated css/js files
+(bootstrap-rtl.min.css, style_rtl.css, main_rtl.js) and some pages with js on footer changes..example the pages with datepicker.
+
+NOTE
+We have updated for both folder (html+html_rtl) the common_script.js and the vendors.css to make the site compatible for RTL direction. </pre>
+           <strong>v.1.5 8 February 2020</strong>
+      <ol>
+        <li>Updated Documentation</li>
+</ol>
+        <strong>v.1.4 7 May 2019</strong>
+      <ol>
+        <li>Rewrite Footer Collapse (Fixed Issue on mobile)</li>
+      </ol>
+      <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) In js/functions.js replace the old script with this one<br>//Footer collapse<br>	var $headingFooter = $('footer h3');<br>	$(window).resize(function() {<br>        if($(window).width() &lt;= 575) {<br>      		$headingFooter.attr(&quot;data-toggle&quot;,&quot;collapse&quot;);<br>        } else {<br>          $headingFooter.removeAttr(&quot;data-toggle&quot;,&quot;collapse&quot;);<br>        }<br>    }).resize();<br>	$headingFooter.on(&quot;click&quot;, function () {<br>		$(this).toggleClass('opened');<br>	});
+
+2) In css/style.css replace the /* Footer */ section from line 1015 to 1067
+
+3) In the html replace the old html code with the new one, below an example of a new column div
+&lt;div class=&quot;col-lg-3 col-md-6 col-sm-6&quot;&gt;<br>&lt;h3 data-target=&quot;#collapse_ft_1&quot;&gt;Quick Links&lt;/h3&gt;<br>&lt;div class=&quot;collapse dont-collapse-sm&quot; id=&quot;collapse_ft_1&quot;&gt;<br>	&lt;ul class=&quot;links&quot;&gt;<br>	&lt;li&gt;&lt;a href=&quot;#0&quot;&gt;About us&lt;/a&gt;&lt;/li&gt;<br>	&lt;li&gt;&lt;a href=&quot;#0&quot;&gt;Faq&lt;/a&gt;&lt;/li&gt;<br>	&lt;li&gt;&lt;a href=&quot;#0&quot;&gt;Help&lt;/a&gt;&lt;/li&gt;<br>	&lt;li&gt;&lt;a href=&quot;#0&quot;&gt;My account&lt;/a&gt;&lt;/li&gt;<br>	&lt;li&gt;&lt;a href=&quot;#0&quot;&gt;Create account&lt;/a&gt;&lt;/li&gt;<br>	&lt;li&gt;&lt;a href=&quot;#0&quot;&gt;Contacts&lt;/a&gt;&lt;/li&gt;<br>	&lt;/ul&gt;<br>&lt;/div&gt;<br>&lt;/div&gt;  </pre>
+         <strong>v.1.3 19 Febraury 2019</strong>
+      <ol>
+        <li>Rewrite Quantity field script for the detail pages forms</li>
+        <li>Minor Css changes for the social share buttons </li>
+      </ol>
+      <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1.1 Update js/input_qty.js + copy the new images plus.svg/minus.svg
+1.2 Update in style.css the /* Booking form */ + /*Quantity incrementer input*/ sections
+1.3 Update the html code in the details pages
+1.4 Update js/functions.js (Replaced the Dropdown panel(deleted) with a Bootsrtap version)
+
+2 Update in style.css the entire class ul.share-buttons
+      </pre>
+         <strong>v.1.2 6 November 2018</strong>
+      <ol>
+        <li>Fixed an issue related to the mobile menu close functionality when scroll to bottom page (Files affected: account.html, about.html, blog.html, blog-post.html, booking.html, checkout.html, confirm.html, contacts.html, contacts-2.html, faq.html, help.html, media-gallery.html, pricing-tables.html, whishlist.html)</li>
+        <li>Fixed an issue related to the mobile menu on faq.html page.</li>
+      </ol>
+      <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+1.1 HTML
+Add the class &quot;menu_fixed&quot; here &lt;header class=&quot;header_in is_sticky menu_fixed&quot;&gt;
+Add the class &quot;sticky_header&quot; here &lt;div class=&quot;sub_header_in sticky_header&quot;&gt;
+
+1.2 CSS
+Open css/style.css and update this class
+
+header.header_in.is_sticky.sticky {<br>  position: fixed;<br>  left: 0;<br>  top: 0;<br>  width: 100%;<br>}
+
+become
+
+header.header_in.is_sticky {<br>  position: fixed;<br>  left: 0;<br>  top: 0;<br>  width: 100%;<br>} 
+
+1.3 Add these styles
+.sub_header_in.sticky_header {<br>  margin-top: 58px;<br>}<br>@media (max-width: 991px) {<br>  .sub_header_in.sticky_header {<br>    margin-top: 48px;<br>  }<br>} 
+
+1.4 Open js/functions.js and delete this script
+// Sticky nav inner
+$(window).on('scroll', function () {
+if ($(this).scrollTop() &gt; 1) {
+$('.header_in.is_sticky').addClass(&quot;sticky&quot;);
+} else {
+$('.header_in.is_sticky').removeClass(&quot;sticky&quot;);
+}<br>});</p>
+
+2) Open js/functions.js and move this script in the new location as you can see in the updated file
+(before the // Mobile Mmenu script)
+
+// Faq section<br>	$('#faq_cat').theiaStickySidebar({<br>		additionalMarginTop: 100<br>	});</pre>
+
+        <strong>v.1.1 16 October 2018</strong>
+        <ol>
+        <li>Added a Bookings summary page (bookings.html)</li>
+        <li>Added some color schemes</li>
+      </ol>
+        <pre>HOW TO UPDATE FROM PREVIOUS VERSION
+
+1) Copy from css/style.css the entire styles under the section 2.13 Bookings
+2) Copy the new files from the css folder (color-beige.css, color-gray.css, .....)</pre>
+
+      <hr>
+
+<h3>Maybe you are interested in</h3>
+<p><a href="https://1.envato.market/Do97q"><img src="assets/images/01-prozim-professionals-directory-listings-template.jpg" width="590" height="300"></a></p>
+<p><a href="https://1.envato.market/dA652"><img src="assets/images/01-foogra-restaurants-directory-listings-template (1).jpg" width="590" height="300"></a></p>
+<p><a href="https://1.envato.market/DmbYj"><img src="assets/images/01-panagea-tours-hotels-restaurants-listing.jpg" width="590" height="300"></a></p>
+<p><a href="https://themeforest.net/item/citytours-city-tours-tour-tickets-and-guides/10715647?ref=ansonika"><img src="assets/images/01-citytours-travel-hotel-tour-template.__large_preview.jpg" width="590" height="300"></a></p>
+<p><a href="https://1.envato.market/NJQ17"><img src="assets/images/01-travelguide-travel-site-template.jpg" width="590" height="300"></a></p>
+<p><a href="https://1.envato.market/EPzrP"><img src="assets/images/01-bestours-multipurpose-tours-template.jpg" width="590" height="300"></a></p>
+
+<p><a href="https://1.envato.market/QXNVP"><img src="assets/images/01-country-hotel-accommodation-b&b.jpg" width="590" height="300"></a></p>
+<p><a href="https://1.envato.market/YYqEJ"><img src="assets/images/01-albert-hotel-bed-and-breakfast.jpg" width="590" height="300"></a></p>
+<p><strong><br>
+    <img src="assets/images/avatar.jpg" width="80" height="80"><br>
+	  <br>
+    Once again, thank you so much for purchasing this theme. Please take a moment to rate it from your Downloads page.</strong><br> 
+		  
+<h3>Need support?</h3>
+For support contact me using the support tab on the item page. You will receive an answer within 24-48 hours (business days)  GMT  +1.
+<strong>Note that Elements customers doesn't have support or updates notification included; to get them please <a href="https://1.envato.market/xv2eA">purchase the item from Themeforest</a>.</strong>
+<ul>
+<li>I only provide support for fixing bugs or small issues on my items.</li>
+<li>I don't provide free support for additional custom modifications to the items.</li>
+<li>Please provide your site link, screenshots and other information about your issue.</li>
+<li><a href="http://themeforest.net/page/item_support_policy" rel="nofollow"><strong>Envato support terms</strong></a></li>
+</ul>
+
+<h3>Need customization or availability for freelance projects?</h3>
+Just send an email via profile page form; please don't forget to specify:
+<ul>
+<li>if you are a company, agency or private user</li>
+<li>all the information about your projects, needs, site urls, project sheet, etc..</li>
+<li>from which country you are</li>
+<li>if you have a deadline</li>
+<li>if you have basic knowledge of  HTML , CSS, JS,  PHP</li>
+</ul>
+<p class="append-bottom alt large"><strong>Ansonika</strong></p>
+		<p><a href="#toc">Go To Table of Contents</a></p>
+		
+		<hr class="space">
+	</div><!-- end div .container -->
+</body>
+</html>

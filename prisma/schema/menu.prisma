@@ -1,0 +1,29 @@
+// Menu Management System
+
+model Menu {
+  id        String     @id @default(cuid())
+  name      String // e.g., "Main Header Navigation", "Footer Links"
+  location  String     @unique // e.g., "header", "footer" - used to fetch the correct menu
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model MenuItem {
+  id     String  @id @default(cuid())
+  label  String // Text to display (e.g., "Home", "About Us")
+  url    String // Link URL (e.g., "/", "/contact")
+  order  Int // To control display order within the menu
+  target String? // Optional: e.g., "_blank" to open in new tab, "_self" default
+
+  menuId String
+  menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  // For hierarchical menus (sub-menus)
+  parentId String?
+  parent   MenuItem?  @relation("SubMenuItems", fields: [parentId], references: [id], onDelete: Cascade)
+  children MenuItem[] @relation("SubMenuItems")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

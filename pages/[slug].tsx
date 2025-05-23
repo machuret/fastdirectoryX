@@ -2,6 +2,8 @@ import { GetStaticPaths, GetStaticProps, NextPage } from 'next';
 import { PrismaClient, Page as PrismaPage } from '@prisma/client';
 import Head from 'next/head';
 import { ParsedUrlQuery } from 'querystring';
+import DOMPurify from 'dompurify';
+import { useEffect, useState } from 'react';
 
 const prisma = new PrismaClient();
 
@@ -19,10 +21,17 @@ interface Params extends ParsedUrlQuery {
 }
 
 const PublicPage: NextPage<PageProps> = ({ page }) => {
+  const [displayHtml, setDisplayHtml] = useState('');
+
+  useEffect(() => {
+    if (page?.content && typeof window !== 'undefined') {
+      setDisplayHtml(DOMPurify.sanitize(page.content));
+    } else if (page?.content) {
+      setDisplayHtml('');
+    }
+  }, [page?.content]);
+
   if (!page) {
-    // This case should ideally be handled by notFound: true in getStaticProps
-    // or by redirecting if fallback: 'blocking' and page is not found.
-    // For fallback: true, you might show a loading state here.
     return (
       <>
         <Head>
@@ -46,10 +55,17 @@ const PublicPage: NextPage<PageProps> = ({ page }) => {
       </Head>
       <article style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
         <h1>{page.title}</h1>
-        <div 
-          style={{ marginTop: '20px', lineHeight: '1.6' }}
-          dangerouslySetInnerHTML={{ __html: page.content }}
-        />
+        {displayHtml ? (
+          <div 
+            style={{ marginTop: '20px', lineHeight: '1.6' }}
+            dangerouslySetInnerHTML={{ __html: displayHtml }}
+          />
+        ) : (
+          <div style={{ marginTop: '20px', lineHeight: '1.6' }}>
+            {/* Placeholder for content that will load after client-side sanitization */}
+            {/* You could put a loading spinner here if desired */}
+          </div>
+        )}
       </article>
     </>
   );

@@ -4,6 +4,9 @@ import withAdminAuth from '@/hoc/withAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout'; 
 import { useAdminHeader } from '@/components/AdminHeaderContext';
 import { Users as UsersIcon } from 'lucide-react';
+import type { NextPageWithLayout, MyAppPageProps } from '@/pages/_app';
+import { iconMap } from '@/components/admin/iconMap';
+import type { LucideIcon } from 'lucide-react';
 
 // Define a type for the user data we expect
 interface UserData {
@@ -101,8 +104,34 @@ const AdminUserManagementPage: React.FC = () => {
 
 const AuthedAdminUserManagementPage = withAdminAuth(AdminUserManagementPage);
 
-(AuthedAdminUserManagementPage as any).getLayout = function getLayout(page: React.ReactElement) {
-  return <AdminLayout>{page}</AdminLayout>;
+(AuthedAdminUserManagementPage as NextPageWithLayout).getLayout = function getLayout(page: React.ReactElement, pageProps: MyAppPageProps) {
+  const defaultPageTitle = "User Management";
+  const DefaultPageIconComponent: LucideIcon = UsersIcon; // Corrected to UsersIcon
+
+  const titleForLayout = pageProps?.pageTitle || defaultPageTitle;
+  
+  let iconComponentForLayout: React.ElementType = DefaultPageIconComponent;
+  if (pageProps?.pageIcon) {
+    if (typeof pageProps.pageIcon === 'string' && iconMap[pageProps.pageIcon as keyof typeof iconMap]) {
+      iconComponentForLayout = iconMap[pageProps.pageIcon as keyof typeof iconMap];
+    } else if (typeof pageProps.pageIcon !== 'string') { // It's already an ElementType
+      iconComponentForLayout = pageProps.pageIcon;
+    } 
+  }
+
+  const descriptionForLayout = pageProps?.pageDescription || "View and manage application users.";
+  const actionButtonsForLayout = pageProps?.actionButtons;
+
+  return (
+    <AdminLayout
+      pageTitle={titleForLayout}
+      pageIcon={iconComponentForLayout}
+      pageDescription={descriptionForLayout}
+      actionButtons={actionButtonsForLayout}
+    >
+      {page}
+    </AdminLayout>
+  );
 };
 
 export default AuthedAdminUserManagementPage;

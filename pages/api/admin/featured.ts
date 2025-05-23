@@ -24,20 +24,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      const updatePromises = Object.entries(updates).map(([listingIdStr, isFeatured]) => {
+      const updateOperations = [];
+      for (const [listingIdStr, isFeatured] of Object.entries(updates)) {
         const listingId = parseInt(listingIdStr, 10);
         if (isNaN(listingId)) {
-          // Log or handle invalid ID format, but don't let it break the transaction
-          console.warn(`Invalid listing ID format: ${listingIdStr}`);
-          return Promise.resolve(); // Or throw an error if strictness is required
+          console.warn(`Invalid listing ID format, skipping: ${listingIdStr}`);
+          continue; // Skip this entry
         }
-        return prisma.listingBusiness.update({
-          where: { listing_business_id: listingId },
-          data: { isFeatured: isFeatured },
-        });
-      });
+        // Ensure isFeatured is a boolean
+        if (typeof isFeatured !== 'boolean') {
+          console.warn(`Invalid isFeatured value for listing ID ${listingIdStr}, skipping. Expected boolean, got ${typeof isFeatured}`);
+          continue; // Skip this entry
+        }
+        updateOperations.push(
+          prisma.listingBusiness.update({
+            where: { listing_business_id: listingId },
+            data: { isFeatured: isFeatured },
+          })
+        );
+      }
 
-      await prisma.$transaction(await Promise.all(updatePromises.filter(p => p))); // Filter out any undefined promises from invalid IDs
+      if (updateOperations.length > 0) {
+        await prisma.$transaction(updateOperations);
+      } else {
+        return res.status(200).json({ message: 'No valid updates to perform.' });
+      }
 
       return res.status(200).json({ message: 'Featured statuses updated successfully.' });
     } catch (error) {

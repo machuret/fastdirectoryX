@@ -7,6 +7,7 @@ export interface DisplayMenuItemFE extends Omit<PrismaMenuItem, 'createdAt' | 'u
   createdAt: string;
   updatedAt: string;
   children: DisplayMenuItemFE[]; // Explicitly type children
+  menu_group?: string; // Made optional
 }
 
 // Simple in-memory cache
@@ -37,11 +38,13 @@ export function clearAllMenuCaches(): void {
   }
 }
 
-function serializeMenuItem(item: PrismaMenuItem): Omit<PrismaMenuItem, 'createdAt' | 'updatedAt'> & { createdAt: string; updatedAt: string } {
+function serializeMenuItem(item: PrismaMenuItem): Omit<PrismaMenuItem, 'createdAt' | 'updatedAt' | 'menu' | 'parent' | 'children'> & { createdAt: string; updatedAt: string; menu_group?: string; } {
   return {
-    ...item,
+    ...item, // If menu_group is added to PrismaMenuItem later, it will be spread here
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
+    // menu_group is not explicitly set here anymore as it's not on PrismaMenuItem
+    // If it were, it would be: menu_group: item.menu_group
   };
 }
 
@@ -73,7 +76,7 @@ export async function getMenuItemsForLocation(location: string): Promise<Display
 
   // Serialize and map all items, initializing children arrays
   menuWithItems.items.forEach((item: PrismaMenuItem) => { 
-    const serializedItem = serializeMenuItem(item);
+    const serializedItem = serializeMenuItem(item) as DisplayMenuItemFE; // Cast needed due to potential mismatch until schema is fixed
     itemMap.set(item.id, { ...serializedItem, children: [] });
   });
 
@@ -90,13 +93,13 @@ export async function getMenuItemsForLocation(location: string): Promise<Display
 
   const sortChildrenRecursive = (menuItem: DisplayMenuItemFE) => {
     if (menuItem.children && menuItem.children.length > 0) {
-      menuItem.children.sort((a, b) => a.order - b.order);
+      menuItem.children.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); // Added nullish coalescing for order
       menuItem.children.forEach(sortChildrenRecursive); 
     }
   };
 
   roots.forEach(sortChildrenRecursive); 
-  roots.sort((a,b) => a.order - b.order);
+  roots.sort((a,b) => (a.order ?? 0) - (b.order ?? 0)); // Added nullish coalescing for order
 
   // Update cache
   menuCache.set(location, { data: roots, timestamp: Date.now() });

@@ -51,7 +51,6 @@ export default async function handleListingItem(req: NextApiRequest, res: NextAp
         latitude,
         longitude,
         category_name,
-        tags,
         isFeatured,
         temporarily_closed,
         permanently_closed,
@@ -80,7 +79,6 @@ export default async function handleListingItem(req: NextApiRequest, res: NextAp
       if (website !== undefined) updateData.website = website;
       if (address !== undefined) updateData.address = address;
       if (category_name !== undefined) updateData.category_name = category_name;
-      if (tags !== undefined) updateData.tags = Array.isArray(tags) ? tags : tags.split(',').map((tag: string) => tag.trim());
       if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
       if (temporarily_closed !== undefined) updateData.temporarily_closed = temporarily_closed;
       if (permanently_closed !== undefined) updateData.permanently_closed = permanently_closed;

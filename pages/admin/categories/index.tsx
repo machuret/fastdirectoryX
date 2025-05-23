@@ -156,8 +156,8 @@ const AdminCategoriesPage: NextPage = () => {
                   </TableCell>
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell>{category.slug}</TableCell>
-                  <TableCell className="max-w-xs truncate">{category.description || '-'}</TableCell>
-                  <TableCell>{category.status || 'ACTIVE'}</TableCell> {/* Assuming default or add status to model */}
+                  <TableCell className="max-w-xs truncate">{(category as any).description || '-'}</TableCell>
+                  <TableCell>{(category as any).status || 'ACTIVE'}</TableCell> {/* Assuming default or add status to model */}
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

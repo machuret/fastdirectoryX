@@ -27,19 +27,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Convert string IDs from frontend to BigInt for Prisma query, as business_id is BigInt
-    const idsAsBigInt = ids.map(id => {
-      try {
-        return BigInt(id as string);
-      } catch (e) {
-        throw new Error(`Invalid ID format: '${id}'. All IDs must be convertible to BigInt.`);
+    // Convert string/number IDs from frontend to number for Prisma query
+    const idsAsNumbers = ids.map(id => {
+      const numId = parseInt(String(id), 10);
+      if (isNaN(numId)) {
+        throw new Error(`Invalid ID format: '${id}'. All IDs must be convertible to a number.`);
       }
+      return numId;
     });
 
     const deleteResult = await prisma.listingBusiness.deleteMany({
       where: {
-        business_id: {
-          in: idsAsBigInt,
+        listing_business_id: { // Use the primary key for ListingBusiness
+          in: idsAsNumbers,
         },
       },
     });

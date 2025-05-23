@@ -24,25 +24,26 @@ const Footer: React.FC<FooterProps> = ({ menuItems }) => {
   const linkSections = [
     {
       title: 'Explore',
+      // Ensure fallback data matches DisplayMenuItemFE structure (id, label, url, menu_group)
       links: menuItems?.filter(item => item.menu_group === 'explore') || [
-        { menu_item_id: 'f1', title: 'Listings', path: '/listings', menu_group: 'explore' },
-        { menu_item_id: 'f2', title: 'Categories', path: '/categories', menu_group: 'explore' },
-        { menu_item_id: 'f3', title: 'Blog', path: '/blog', menu_group: 'explore' },
+        { id: 'f1', label: 'Listings', url: '/listings', menu_group: 'explore' },
+        { id: 'f2', label: 'Categories', url: '/categories', menu_group: 'explore' },
+        { id: 'f3', label: 'Blog', url: '/blog', menu_group: 'explore' },
       ],
     },
     {
       title: 'Company',
       links: menuItems?.filter(item => item.menu_group === 'company') || [
-        { menu_item_id: 'f4', title: 'About Us', path: '/about', menu_group: 'company' },
-        { menu_item_id: 'f5', title: 'Contact', path: '/contact', menu_group: 'company' },
-        { menu_item_id: 'f6', title: 'Careers', path: '/careers', menu_group: 'company' },
+        { id: 'f4', label: 'About Us', url: '/about', menu_group: 'company' },
+        { id: 'f5', label: 'Contact', url: '/contact', menu_group: 'company' },
+        { id: 'f6', label: 'Careers', url: '/careers', menu_group: 'company' },
       ],
     },
     {
       title: 'Legal',
       links: menuItems?.filter(item => item.menu_group === 'legal') || [
-        { menu_item_id: 'f7', title: 'Privacy Policy', path: '/privacy', menu_group: 'legal' },
-        { menu_item_id: 'f8', title: 'Terms of Service', path: '/terms', menu_group: 'legal' },
+        { id: 'f7', label: 'Privacy Policy', url: '/privacy', menu_group: 'legal' },
+        { id: 'f8', label: 'Terms of Service', url: '/terms', menu_group: 'legal' },
       ],
     },
   ];
@@ -77,10 +78,10 @@ const Footer: React.FC<FooterProps> = ({ menuItems }) => {
               <h3 className="text-sm font-semibold text-text-primary-dark tracking-wider uppercase">{section.title}</h3>
               <ul role="list" className="mt-4 space-y-2">
                 {section.links.map((item) => (
-                  <li key={item.menu_item_id}>
-                    <Link href={item.path || '#'} legacyBehavior>
+                  <li key={item.id}> 
+                    <Link href={item.url || '#'} legacyBehavior>
                       <a className="text-base text-text-secondary-gray hover:text-accent-purple transition-colors">
-                        {item.title}
+                        {item.label}
                       </a>
                     </Link>
                   </li>

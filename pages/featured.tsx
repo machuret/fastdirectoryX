@@ -2,7 +2,8 @@ import { GetServerSideProps, NextPage } from 'next';
 import prisma from '@/lib/prisma';
 import { ListingBusiness } from '@prisma/client';
 import Link from 'next/link';
-import MainLayout from '@/components/layout/MainLayout'; // Assuming you have a MainLayout
+import Layout from '@/components/Layout';
+import Head from 'next/head';
 
 // Define a type for the props, including serialized listings
 // Remember to handle BigInt, Date, Decimal serialization as per memory c7edf72a-34bc-4f99-8c8d-8c9ddfc911d2
@@ -67,7 +68,11 @@ export const getServerSideProps: GetServerSideProps<FeaturedPageProps> = async (
 
 const FeaturedPage: NextPage<FeaturedPageProps> = ({ featuredListings }) => {
   return (
-    <MainLayout pageTitle="Featured Businesses">
+    <Layout>
+      <Head>
+        <title>Featured Businesses - My Site</title>
+        {/* You can add other meta tags here too */}
+      </Head>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-12 text-gray-800">Featured Businesses</h1>
         
@@ -99,7 +104,7 @@ const FeaturedPage: NextPage<FeaturedPageProps> = ({ featuredListings }) => {
           </div>
         )}
       </div>
-    </MainLayout>
+    </Layout>
   );
 };
 

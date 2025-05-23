@@ -17,6 +17,9 @@ import {
 interface AdminLayoutProps {
   children: React.ReactNode;
   pageTitle: string;
+  pageIcon?: React.ElementType; // Added pageIcon
+  pageDescription?: string; // Added pageDescription
+  actionButtons?: React.ReactNode; // Added actionButtons
   headerMenuItems?: DisplayMenuItemFE[];
   footerMenuItems?: DisplayMenuItemFE[];
 }
@@ -45,7 +48,7 @@ const settingsNavItems = [
   { name: 'Contact Form', path: '/admin/settings/contactform', icon: FileText }, // Added Contact Form link
 ];
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle, headerMenuItems, footerMenuItems }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle, pageIcon, pageDescription, actionButtons, headerMenuItems, footerMenuItems }) => {
   const router = useRouter();
 
   const LayoutContent: React.FC = () => {
@@ -167,8 +170,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle, headerMe
     </Link>
   );
 
+  // Create an element from pageIcon if it exists
+  const iconElement = pageIcon ? React.createElement(pageIcon) : undefined;
+
   return (
-    <AdminHeaderProvider initialBaseElements={{ title: pageTitle }}>
+    <AdminHeaderProvider initialBaseElements={{ 
+      title: pageTitle, 
+      icon: iconElement, 
+      description: pageDescription,
+      actionButtons: actionButtons // Pass actionButtons
+    }}>
       <LayoutContent />
     </AdminHeaderProvider>
   );

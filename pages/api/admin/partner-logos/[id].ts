@@ -5,16 +5,14 @@ import { PartnerLogo } from '@prisma/client';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession({ req });
-  const { id: queryId } = req.query; // Rename to avoid conflict if 'id' is used later
+  const { id: queryId } = req.query; // queryId is the string from the URL
 
   if (typeof queryId !== 'string') {
-    return res.status(400).json({ message: 'Partner Logo ID must be a string' });
+    return res.status(400).json({ message: 'Partner Logo ID must be a string and is required.' });
   }
 
-  const id = parseInt(queryId, 10);
-  if (isNaN(id)) {
-    return res.status(400).json({ message: 'Invalid Partner Logo ID format. Must be an integer.' });
-  }
+  // Use queryId directly as it's already a string
+  const id = queryId;
 
   // TODO: Implement proper authorization check here
   // if (!session || !session.user?.isAdmin) {
@@ -24,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const partnerLogo: PartnerLogo | null = await prisma.partnerLogo.findUnique({
-        where: { id }, // 'id' is now a number
+        where: { id }, // 'id' is now a string
       });
       if (!partnerLogo) {
         return res.status(404).json({ message: 'Partner Logo not found' });
@@ -44,12 +42,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const updatedPartnerLogo: PartnerLogo = await prisma.partnerLogo.update({
-        where: { id }, // 'id' is now a number
+        where: { id }, // 'id' is now a string
         data: {
           name,
           imageUrl,
           linkUrl: linkUrl !== undefined ? linkUrl : null,
-          order: order !== undefined ? parseInt(order as string, 10) : undefined,
+          order: order !== undefined ? order : undefined,
           isVisible: typeof isVisible === 'boolean' ? isVisible : undefined,
         },
       });
@@ -64,7 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } else if (req.method === 'DELETE') {
     try {
       await prisma.partnerLogo.delete({
-        where: { id }, // 'id' is now a number
+        where: { id }, // 'id' is now a string
       });
       res.status(204).end(); // No content to send back
     } catch (error) {

@@ -7,14 +7,14 @@ async function main() {
 
   // --- Seed Categories ---
   const categoriesData: Prisma.ListingCategoryCreateInput[] = [
-    { category_name: 'Restaurants & Cafes' },
-    { category_name: 'Shopping & Retail' },
-    { category_name: 'Health & Beauty' },
-    { category_name: 'Home Services' },
-    { category_name: 'Automotive' },
-    { category_name: 'Entertainment' },
-    { category_name: 'Professional Services' },
-    { category_name: 'Travel & Tourism' },
+    { category_name: 'Restaurants & Cafes', slug: 'restaurants-and-cafes' },
+    { category_name: 'Shopping & Retail', slug: 'shopping-and-retail' },
+    { category_name: 'Health & Beauty', slug: 'health-and-beauty' },
+    { category_name: 'Home Services', slug: 'home-services' },
+    { category_name: 'Automotive', slug: 'automotive' },
+    { category_name: 'Entertainment', slug: 'entertainment' },
+    { category_name: 'Professional Services', slug: 'professional-services' },
+    { category_name: 'Travel & Tourism', slug: 'travel-and-tourism' },
   ];
 
   for (const catData of categoriesData) {
@@ -34,7 +34,7 @@ async function main() {
   }
 
   // --- Seed Businesses ---
-  const businessesData: Omit<Prisma.ListingBusinessCreateInput, 'categories' | 'imageUrls'>[] = [
+  const businessesData: Omit<Prisma.ListingBusinessCreateInput, 'categories' | 'imageUrls' | 'business' | 'user'>[] = [
     {
       title: 'The Cozy Corner Cafe',
       slug: 'cozy-corner-cafe',
@@ -105,9 +105,26 @@ async function main() {
 
   for (let i = 0; i < businessesData.length; i++) {
     const bizData = businessesData[i];
-    const business = await prisma.listingBusiness.create({
+
+    // Placeholder user_id. In a real scenario, fetch or create a user.
+    const placeholderUserId = 1; 
+
+    // 1. Create the core Business record
+    const coreBusiness = await prisma.business.create({
       data: {
-        ...bizData,
+        name: bizData.title, // Use listing title as business name
+        user: { connect: { user_id: placeholderUserId } }, // Connect to an existing user
+        // Add other required fields for Business model if any, e.g., address, phone if they are part of Business and not just ListingBusiness
+      }
+    });
+    console.log(`Created core business with id: ${coreBusiness.business_id} - ${coreBusiness.name}`);
+
+    // 2. Create the ListingBusiness record, linking to the core Business and User
+    const listingBusiness = await prisma.listingBusiness.create({
+      data: {
+        ...bizData, // Spread the rest of the listing-specific data
+        business: { connect: { business_id: coreBusiness.business_id } }, 
+        user: { connect: { user_id: placeholderUserId } }, 
         categories: {
           create: [
             // Assign 1-2 categories to each business
@@ -121,13 +138,13 @@ async function main() {
         },
         imageUrls: {
           create: [
-            { url: bizData.image_url || '/listings/default-1.jpg', description: `${bizData.title} primary image`, is_cover_image: true },
-            { url: `/listings/default-img-${i % 3 + 2}.jpg`, description: `Additional image for ${bizData.title}` }, // Ensure unique URLs if needed
+            { url: bizData.image_url || '/listings/default-1.jpg', description: `${bizData.title} primary image` }, // Removed is_primary
+            { url: `/listings/default-img-${i % 3 + 2}.jpg`, description: `Additional image for ${bizData.title}` }, 
           ]
         }
       },
     });
-    console.log(`Created business with id: ${business.business_id} - ${business.title}`);
+    console.log(`Created listing business with id: ${listingBusiness.listing_business_id} - ${listingBusiness.title}`);
   }
 
   console.log(`Seeding finished.`);

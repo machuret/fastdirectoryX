@@ -40,7 +40,7 @@ const newUserFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
-  role: z.nativeEnum(UserRole).default(UserRole.USER),
+  role: z.nativeEnum(UserRole).optional(), // Made optional, default is handled by useForm's defaultValues
   // status: z.nativeEnum(UserStatus).default(UserStatus.ACTIVE), // Status might be set by backend by default
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match.",
@@ -51,6 +51,7 @@ type NewUserFormValues = z.infer<typeof newUserFormSchema>;
 
 const AdminAddNewUserPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const router = useRouter(); // Initialize router
 
   const form = useForm<NewUserFormValues>({
@@ -67,6 +68,7 @@ const AdminAddNewUserPage = () => {
 
   async function onSubmit(data: NewUserFormValues) {
     setIsLoading(true);
+    setApiError(null);
     try {
       // Exclude confirmPassword from the data sent to the API
       const { confirmPassword, ...userData } = data;
@@ -90,6 +92,7 @@ const AdminAddNewUserPage = () => {
 
     } catch (error: any) {
       console.error("Failed to create user:", error);
+      setApiError(error.message || "An unexpected error occurred. Please try again.");
       toast.error(error.message || "An unexpected error occurred. Please try again.");
     }
     setIsLoading(false);
@@ -130,15 +133,16 @@ const AdminAddNewUserPage = () => {
             <CardDescription>Enter the information for the new user.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {form.formState.errors.form && <p className="text-sm text-red-500 bg-red-500/10 p-3 rounded-md">{form.formState.errors.form.message}</p>}
+            {apiError && (
+              <p className="text-sm font-medium text-destructive">{apiError}</p>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
                 <Input 
                   id="name" 
-                  name="name"
+                  placeholder="Enter user's full name"
                   {...form.register("name")}
-                  placeholder="e.g. John Doe"
                   disabled={isLoading} 
                   className="mt-1"
                 />
@@ -148,10 +152,9 @@ const AdminAddNewUserPage = () => {
                 <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
                 <Input 
                   id="email" 
-                  name="email"
                   type="email" 
+                  placeholder="Enter user's email"
                   {...form.register("email")}
-                  placeholder="e.g. user@example.com"
                   disabled={isLoading}
                   className="mt-1"
                 />
@@ -164,10 +167,9 @@ const AdminAddNewUserPage = () => {
                 <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                 <Input 
                   id="password" 
-                  name="password"
                   type="password" 
+                  placeholder="Enter password"
                   {...form.register("password")}
-                  placeholder="Min. 6 characters"
                   disabled={isLoading}
                   className="mt-1"
                 />
@@ -177,10 +179,9 @@ const AdminAddNewUserPage = () => {
                 <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
                 <Input 
                   id="confirmPassword" 
-                  name="confirmPassword"
                   type="password" 
+                  placeholder="Confirm password"
                   {...form.register("confirmPassword")}
-                  placeholder="Re-enter password"
                   disabled={isLoading}
                   className="mt-1"
                 />
@@ -190,7 +191,12 @@ const AdminAddNewUserPage = () => {
 
             <div>
               <Label htmlFor="role">Role <span className="text-destructive">*</span></Label>
-              <Select name="role" {...form.register("role")} disabled={isLoading}>
+              <Select 
+                {...form.register("role")}
+                defaultValue={form.getValues("role") || UserRole.USER} 
+                onValueChange={(value) => form.setValue('role', value as UserRoleType, { shouldValidate: true })} 
+                disabled={isLoading}
+              >
                 <SelectTrigger id="role" className="mt-1">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>

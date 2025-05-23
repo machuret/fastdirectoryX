@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/lib/prisma';
 import { getSession } from 'next-auth/react';
 import OpenAI from 'openai';
+import { Prisma } from '@prisma/client';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -99,7 +100,7 @@ Ensure the questions are relevant to a potential customer and the answers are co
       const updatedBusiness = await prisma.listingBusiness.update({
         where: { listing_business_id: listingId },
         data: {
-          faq: faqArray,
+          faq: faqArray as unknown as Prisma.InputJsonValue,
           faqLastGeneratedAt: new Date(),
         },
       });

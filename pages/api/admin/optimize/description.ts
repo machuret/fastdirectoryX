@@ -51,21 +51,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const results: OptimizationResult[] = [];
   // Specify the fields needed for processing to avoid fetching unnecessary data
-  type ListingForProcessing = Pick<ListingBusiness, 'business_id' | 'title' | 'description' | 'city' | 'street' | 'neighborhood'>;
+  type ListingForProcessing = Pick<ListingBusiness, 'listing_business_id' | 'title' | 'description' | 'city' | 'street' | 'neighborhood'>;
   let listingsToProcess: ListingForProcessing[] = [];
 
   try {
     if (optimizeAll) {
       listingsToProcess = await prisma.listingBusiness.findMany({
         where: { descriptionOptimized: false }, 
-        select: { business_id: true, title: true, description: true, city: true, street: true, neighborhood: true },
+        select: { listing_business_id: true, title: true, description: true, city: true, street: true, neighborhood: true },
         // take: 10, // Safety limit for 'optimizeAll' during development
       });
     } else if (listingIds && listingIds.length > 0) {
-      const numericListingIds = listingIds.map(id => BigInt(id));
+      const numericListingIds = listingIds.map(id => parseInt(id, 10)).filter(id => !isNaN(id)); // Ensure valid numbers
+      if (numericListingIds.length !== listingIds.length) {
+        // Handle cases where some IDs were not valid numbers if necessary, or assume valid input
+        return res.status(400).json({ message: 'Some listing IDs were invalid.' });
+      }
       listingsToProcess = await prisma.listingBusiness.findMany({
-        where: { business_id: { in: numericListingIds } },
-        select: { business_id: true, title: true, description: true, city: true, street: true, neighborhood: true },
+        where: { listing_business_id: { in: numericListingIds } }, // Use listing_business_id and numbers
+        select: { listing_business_id: true, title: true, description: true, city: true, street: true, neighborhood: true },
       });
     }
 
@@ -74,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     for (const listing of listingsToProcess) {
-      const listingIdString = listing.business_id.toString();
+      const listingIdString = listing.listing_business_id.toString(); // Use listing_business_id
       try {
         let locationContext = [listing.city, listing.street, listing.neighborhood].filter(Boolean).join(', ');
         if (!locationContext && listing.city) locationContext = listing.city;
@@ -100,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         if (newDescription) {
           await prisma.listingBusiness.update({
-            where: { business_id: listing.business_id },
+            where: { listing_business_id: listing.listing_business_id }, // Use listing_business_id
             data: {
               description: newDescription,
               descriptionOptimized: true,
@@ -122,7 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
       } catch (error: any) {
-        console.error(`Error optimizing listing ${listing.business_id}:`, error);
+        console.error(`Error optimizing listing ${listing.listing_business_id}:`, error); // Use listing_business_id
         results.push({
           listingId: listingIdString,
           originalDescription: listing.description,

@@ -6,6 +6,9 @@ import withAdminAuth from '@/hoc/withAdminAuth';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdminHeader } from '@/components/AdminHeaderContext';
 import { Image as ImageIconLucide } from 'lucide-react'; // Using Image icon as a placeholder
+import type { NextPageWithLayout, MyAppPageProps } from '@/pages/_app'; // Added for getLayout
+import { iconMap } from '@/components/admin/iconMap'; // Added for getLayout
+import type { LucideIcon } from 'lucide-react'; // Added for getLayout typing
 
 interface ImportResult {
   sourceUrl: string;
@@ -45,7 +48,7 @@ function PhotoImporterPage() {
     }
 
     const parsedBusinessId = businessId ? parseInt(businessId, 10) : undefined;
-    if (businessId && isNaN(parsedBusinessId)) {
+    if (businessId && (parsedBusinessId === undefined || isNaN(parsedBusinessId))) {
       setMessage('Invalid Business ID. Must be a number.');
       setIsLoading(false);
       return;
@@ -172,8 +175,34 @@ function PhotoImporterPage() {
 // Apply Admin Layout and Authentication
 const AuthedPhotoImporterPage = withAdminAuth(PhotoImporterPage);
 
-(AuthedPhotoImporterPage as any).getLayout = function getLayout(page: React.ReactElement) {
-  return <AdminLayout>{page}</AdminLayout>;
+(AuthedPhotoImporterPage as NextPageWithLayout).getLayout = function getLayout(page: React.ReactElement, pageProps: MyAppPageProps) {
+  const defaultPageTitle = "Photo Importer";
+  const DefaultPageIconComponent: LucideIcon = ImageIconLucide; // Using imported ImageIconLucide
+
+  const titleForLayout = pageProps?.pageTitle || defaultPageTitle;
+  
+  let iconComponentForLayout: React.ElementType = DefaultPageIconComponent;
+  if (pageProps?.pageIcon) {
+    if (typeof pageProps.pageIcon === 'string' && iconMap[pageProps.pageIcon as keyof typeof iconMap]) {
+      iconComponentForLayout = iconMap[pageProps.pageIcon as keyof typeof iconMap];
+    } else if (typeof pageProps.pageIcon !== 'string') { // It's already an ElementType
+      iconComponentForLayout = pageProps.pageIcon;
+    } // If it's a string but not in iconMap, it defaults to DefaultPageIconComponent
+  }
+
+  const descriptionForLayout = pageProps?.pageDescription || "Import photos from URLs to Azure Blob Storage.";
+  const actionButtonsForLayout = pageProps?.actionButtons;
+
+  return (
+    <AdminLayout
+      pageTitle={titleForLayout}
+      pageIcon={iconComponentForLayout}
+      pageDescription={descriptionForLayout}
+      actionButtons={actionButtonsForLayout}
+    >
+      {page}
+    </AdminLayout>
+  );
 };
 
 export default AuthedPhotoImporterPage;

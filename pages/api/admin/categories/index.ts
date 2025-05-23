@@ -37,7 +37,7 @@ export default async function handler(
 
     case 'POST':
       try {
-        const { name, slug, description, featureImageUrl, parentId, metaTitle, metaDescription, metaKeywords } = req.body;
+        const { name, slug, featureImageUrl } = req.body;
 
         if (!name || !slug) {
           return res.status(400).json({ error: 'Name and slug are required' });
@@ -56,12 +56,7 @@ export default async function handler(
           data: {
             name,
             slug,
-            description,
             featureImageUrl, // This can be null or a string URL
-            parentId: parentId ? parseInt(parentId as string, 10) : null,
-            metaTitle,
-            metaDescription,
-            metaKeywords,
           },
         });
         return res.status(201).json({ message: 'Category created successfully', category: newCategory });

@@ -85,13 +85,13 @@ const EditCategoryPage: NextPage = () => {
           setFormData({
             name: category.name || '',
             slug: category.slug || '',
-            description: category.description || '',
+            description: (category as any).description || '', 
             featureImageUrl: category.featureImageUrl || '',
-            parentId: category.parentId?.toString() || '',
-            metaTitle: category.metaTitle || '',
-            metaDescription: category.metaDescription || '',
-            metaKeywords: category.metaKeywords || '',
-            status: category.status || 'ACTIVE',
+            parentId: (category as any).parentId?.toString() || '',
+            metaTitle: (category as any).metaTitle || '',
+            metaDescription: (category as any).metaDescription || '',
+            metaKeywords: (category as any).metaKeywords || '',
+            status: (category as any).status || 'ACTIVE',
           });
           if (category.featureImageUrl) {
             setImagePreview(category.featureImageUrl);

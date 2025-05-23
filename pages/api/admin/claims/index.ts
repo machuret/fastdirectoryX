@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/lib/prisma';
 import { getSession } from 'next-auth/react';
-import { UserRole, ClaimStatus } from '@prisma/client'; // Assuming UserRole enum exists
+import { UserRole, ClaimStatus, Prisma } from '@prisma/client'; // Assuming UserRole enum exists
 
 // Helper function to serialize claim data (handles Date objects)
 const serializeClaim = (claim: any) => ({
@@ -166,7 +166,7 @@ export default async function handleAdminClaims(req: NextApiRequest, res: NextAp
 
     } catch (error: any) {
       console.error('Failed to update claim:', error);
-      if (error instanceof prisma.PrismaClientKnownRequestError) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
         // Handle specific Prisma errors if needed
       }
       return res.status(500).json({ message: 'Failed to update claim.', error: error.message });

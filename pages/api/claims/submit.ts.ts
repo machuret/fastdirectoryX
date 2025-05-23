@@ -11,7 +11,8 @@ export default async function handleSubmitClaim(req: NextApiRequest, res: NextAp
 
   const session = await getSession({ req });
 
-  if (!session || !session.user || !session.user.user_id) {
+  // Check for session and user email (assuming email is the key to find the user_id)
+  if (!session || !session.user || !session.user.email) {
     return res.status(401).json({ message: 'Unauthorized. Please log in to submit a claim.' });
   }
 
@@ -35,6 +36,17 @@ export default async function handleSubmitClaim(req: NextApiRequest, res: NextAp
   }
 
   try {
+    // Fetch the user from DB using email from session to get their integer user_id
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { user_id: true },
+    });
+
+    if (!user || typeof user.user_id !== 'number') {
+      return res.status(401).json({ message: 'User not found or invalid user data in session.' });
+    }
+    const userIdFromDb = user.user_id;
+
     // Check if the listing exists
     const listing = await prisma.listingBusiness.findUnique({
       where: { listing_business_id: listingId },
@@ -48,7 +60,7 @@ export default async function handleSubmitClaim(req: NextApiRequest, res: NextAp
     const existingClaim = await prisma.ownershipClaim.findFirst({
       where: {
         listing_business_id: listingId,
-        user_id: session.user.user_id,
+        user_id: userIdFromDb, // Use user_id from DB
         status: {
           in: [ClaimStatus.PENDING, ClaimStatus.APPROVED]
         }
@@ -67,7 +79,7 @@ export default async function handleSubmitClaim(req: NextApiRequest, res: NextAp
     const newClaim = await prisma.ownershipClaim.create({
       data: {
         listing_business_id: listingId,
-        user_id: session.user.user_id, // Logged-in user making the claim
+        user_id: userIdFromDb, // Use user_id from DB
         claimant_name: claimant_name as string,
         company_name: company_name as string | undefined,
         claimant_email: claimant_email as string,

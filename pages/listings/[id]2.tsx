@@ -7,21 +7,22 @@ import { ListingBusiness } from '@prisma/client';
 import Head from 'next/head';
 
 // Define a type for the serialized listing for page props
-interface SerializedPublicListing extends Omit<ListingBusiness, 'business_id' | 'latitude' | 'longitude' | 'updatedAt' | 'scraped_at'> {
+interface SerializedPublicListing extends Omit<ListingBusiness, 'listing_business_id' | 'business_id' | 'latitude' | 'longitude' | 'updatedAt' | 'scraped_at'> {
+  listing_business_id: string; 
   business_id: string; 
   latitude?: string | null; 
   longitude?: string | null; 
   updatedAt: string; 
-  scraped_at?: string | null; 
-  image_url?: string | null; // Added for the main listing image
-  title: string; // Ensure title is here, it's used directly
-  description?: string | null; // Ensure description is here
-  category_name?: string | null; // Ensure category_name is here
-  address?: string | null;
-  phone?: string | null;
-  website?: string | null;
-  price_range?: string | null;
-  galleryImages?: SerializedGalleryImage[]; // Added for gallery images
+  scraped_at: string | null; 
+  image_url: string | null; 
+  title: string; 
+  description: string | null; 
+  category_name: string | null; 
+  address: string | null; 
+  phone: string | null; 
+  website: string | null; 
+  price_range: string | null; 
+  galleryImages?: SerializedGalleryImage[]; 
   // Any other Date/BigInt/Decimal fields that are serialized should be strings here
   // Note: If you include related data like reviews, they would need their own serialized types too.
 }
@@ -37,13 +38,14 @@ interface SerializedGalleryImage {
 interface ListingPageProps {
   listing: SerializedPublicListing | null;
   error?: string;
-  requestedSlug?: string | null; // Changed back to requestedSlug, and allow null
+  requestedSlug?: string | null; 
 }
 
 // Helper to convert Prisma Decimal/Date/BigInt to string for props
 const serializeListing = (listing: ListingBusiness & { imageUrls?: { url: string; description?: string | null }[] }): SerializedPublicListing => {
   const serializableListing: any = { ...listing };
 
+  serializableListing.listing_business_id = listing.listing_business_id.toString();
   serializableListing.business_id = listing.business_id.toString();
 
   if (listing.latitude !== null && listing.latitude !== undefined) {
@@ -78,32 +80,30 @@ const serializeListing = (listing: ListingBusiness & { imageUrls?: { url: string
 };
 
 export const getServerSideProps: GetServerSideProps<ListingPageProps> = async (context) => {
-  const { slug } = context.params || {}; // Use 'slug' as this file will be renamed to [slug].tsx
+  const { slug } = context.params || {}; 
 
   if (!slug || typeof slug !== 'string') {
     return { 
       props: { 
         listing: null, 
         error: 'Listing slug is missing or invalid.', 
-        requestedSlug: (typeof slug === 'string' ? slug : null) // Ensure it's string or null
+        requestedSlug: (typeof slug === 'string' ? slug : null) 
       }
     };
   }
 
   try {
     const listingData = await prisma.listingBusiness.findUnique({
-      where: { slug: slug }, // Query by slug
+      where: { slug: slug }, 
       include: {
-        imageUrls: { // Include related gallery images
+        imageUrls: { 
           select: {
             url: true,
             description: true,
-            image_url_id: true, // For potential key prop
+            image_url_id: true, 
           },
           orderBy: {
-            // Add ordering if your ListingImageUrl has an 'order' field or similar
-            // e.g., order: 'asc',
-            image_url_id: 'asc' // Default order by ID if no specific order field
+            image_url_id: 'asc' 
           }
         }
         // Optionally include other related data like categories, openingHours, reviews as needed

@@ -50,10 +50,14 @@ const withAdminAuth = <P extends object>(
     return ApiAuthHandler as any; 
   }
 
+  // The PageComponent variable is used for rendering, keep its existing type for that.
   const PageComponent = WrappedComponent as NextComponentType<NextPageContext, any, P & WithAdminAuthInjectedProps>;
 
-  if (PageComponent.getServerSideProps) {
-    const ServerSideAuthComponent: NextPage<P & WithAdminAuthInjectedProps, any> = (props: P & WithAdminAuthInjectedProps) => {
+  // Check for getServerSideProps directly on WrappedComponent
+  if (typeof (WrappedComponent as any).getServerSideProps === 'function') {
+    const ServerSideAuthComponent: NextPage<P & WithAdminAuthInjectedProps, any> & {
+      getServerSideProps?: GetServerSideProps<any, any>;
+    } = (props: P & WithAdminAuthInjectedProps) => {
       const { data: sessionFromHook, status } = useSession();
       const router = useRouter();
       const [isClientForGSSP, setIsClientForGSSP] = useState(false);
@@ -78,29 +82,39 @@ const withAdminAuth = <P extends object>(
       return <PageComponent {...props as P & WithAdminAuthInjectedProps} />;
     };
 
-    ServerSideAuthComponent.displayName = `WithAdminAuth_GSSP(${getDisplayName(PageComponent)})`;
+    ServerSideAuthComponent.displayName = `WithAdminAuth_GSSP(${getDisplayName(WrappedComponent)})`;
     
-    // Forward the original getServerSideProps
-    const originalGetServerSideProps = PageComponent.getServerSideProps as GetServerSideProps<P & WithAdminAuthInjectedProps>;
-    ServerSideAuthComponent.getServerSideProps = async (context: GetServerSidePropsContext) => {
-      const session = await getServerSession(context.req, context.res, authOptions);
-      if (!session || session.user?.role !== 'ADMIN' || session.user?.status !== 'ACTIVE') {
-        return {
-          redirect: {
-            destination: '/login?error=Unauthorized&message=Admin access required (GSSP).',
-            permanent: false,
-          },
-        };
-      }
-      // Call original GSSP and inject session
-      const originalProps = await originalGetServerSideProps(context);
-      if ('props' in originalProps) {
-        return { ...originalProps, props: { ...originalProps.props, session } };
-      }
-      return { ...originalProps, props: { session } as any }; // Ensure props object exists
-    };
+    // @ts-ignore
+    const originalGetServerSideProps = (WrappedComponent as any).getServerSideProps; 
+    
+    // Only assign if originalGetServerSideProps is indeed a function
+    if (typeof originalGetServerSideProps === 'function') {
+      ServerSideAuthComponent.getServerSideProps = async (context: GetServerSidePropsContext) => {
+        const session = await getServerSession(context.req, context.res, authOptions);
+        if (!session || session.user?.role !== 'ADMIN' || session.user?.status !== 'ACTIVE') {
+          return {
+            redirect: {
+              destination: '/login?error=Unauthorized&message=Admin access required (GSSP).',
+              permanent: false,
+            },
+          };
+        }
+        
+        // Call original GSSP and inject session, ensuring it's a function
+        // No need for another typeof check here as we are inside one for originalGetServerSideProps
+        const gsspFunction = originalGetServerSideProps as GetServerSideProps<any, any>;
+        const originalProps = await gsspFunction(context);
+        if ('props' in originalProps) {
+          return { ...originalProps, props: { ...originalProps.props, session } };
+        }
+        // Handle cases where originalProps might not have 'props' (e.g. redirect/notFound)
+        // or when originalProps.props is undefined
+        const existingProps = (originalProps as any).props || {};
+        return { ...originalProps, props: { ...existingProps, session } };
+      };
+    } // End if typeof originalGetServerSideProps === 'function'
 
-    if (PageComponent.getInitialProps) ServerSideAuthComponent.getInitialProps = PageComponent.getInitialProps;
+    if ((WrappedComponent as any).getInitialProps) ServerSideAuthComponent.getInitialProps = (WrappedComponent as any).getInitialProps;
     // Add other static methods if needed (getStaticProps, getStaticPaths - though less common with GSSP)
 
     return ServerSideAuthComponent;
@@ -128,8 +142,8 @@ const withAdminAuth = <P extends object>(
       return <PageComponent {...props as P & WithAdminAuthInjectedProps} session={session} />;
     };
 
-    ClientSideAuthComponent.displayName = `WithAdminAuth_Client(${getDisplayName(PageComponent)})`;
-    if (PageComponent.getInitialProps) ClientSideAuthComponent.getInitialProps = PageComponent.getInitialProps;
+    ClientSideAuthComponent.displayName = `WithAdminAuth_Client(${getDisplayName(WrappedComponent)})`;
+    if ((WrappedComponent as any).getInitialProps) ClientSideAuthComponent.getInitialProps = (WrappedComponent as any).getInitialProps;
     return ClientSideAuthComponent;
   }
 };

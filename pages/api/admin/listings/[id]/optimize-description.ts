@@ -16,36 +16,40 @@ export default async function handler(
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 
-  const { id } = req.query; // This 'id' will be the business ID from the URL segment
+  const { id: idString } = req.query; // Renamed to idString for clarity
 
-  if (!id || typeof id !== 'string') {
-    return res.status(400).json({ message: 'Business ID is required.' });
+  if (!idString || typeof idString !== 'string') {
+    return res.status(400).json({ message: 'Listing Business ID is required.' });
   }
 
-  // Convert string ID to bigint for Prisma query, assuming it's a numeric ID
-  let businessIdBigInt: bigint;
+  // Convert string ID to number for Prisma query
+  let listingBusinessId: number;
   try {
-    businessIdBigInt = BigInt(id);
+    listingBusinessId = parseInt(idString, 10);
+    if (isNaN(listingBusinessId)) {
+      // Handle cases where parseInt results in NaN (e.g., non-numeric string)
+      throw new Error('ID is not a valid number.');
+    }
   } catch (error) {
-    return res.status(400).json({ message: 'Invalid Business ID format. Must be a number.' });
+    return res.status(400).json({ message: 'Invalid Listing Business ID format. Must be a number.' });
   }
 
   try {
     const business = await prisma.listingBusiness.findUnique({
-      where: { business_id: businessIdBigInt }, // Ensure your Prisma schema uses 'business_id' for ListingBusiness model and it's a BigInt
+      where: { listing_business_id: listingBusinessId }, // Use listing_business_id and the parsed number
       select: { description: true },
     });
 
     if (!business) {
-      return res.status(404).json({ message: 'Business not found.' });
+      return res.status(404).json({ message: 'Listing Business not found.' });
     }
 
     if (!business.description || business.description.trim() === '') {
-      return res.status(400).json({ message: 'Business description is empty, nothing to optimize.' });
+      return res.status(400).json({ message: 'Listing Business description is empty, nothing to optimize.' });
     }
 
     // --- Placeholder for OpenAI API call ---
-    console.log(`Optimizing description for business ID: ${id}`);
+    console.log(`Optimizing description for listing business ID: ${listingBusinessId}`);
     console.log(`Original description: ${business.description}`);
 
     // Example prompt structure (you'll need to refine this)
@@ -71,7 +75,7 @@ export default async function handler(
     }
 
     const updatedBusiness = await prisma.listingBusiness.update({
-      where: { business_id: businessIdBigInt },
+      where: { listing_business_id: listingBusinessId }, // Use listing_business_id and the parsed number
       data: { 
         description: optimizedDescription,
         descriptionOptimized: true,

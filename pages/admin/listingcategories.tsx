@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Toaster, toast } from 'sonner'; // Assuming you use Sonner for toasts
 import type { NextPageWithLayout, MyAppPageProps } from '@/pages/_app'; // Import types from _app
-import { AdminHeaderProvider } from '@/components/AdminHeaderContext'; // Import for getLayout
 import { iconMap } from '@/components/admin/iconMap'; // For icons in getLayout
 import type { LucideIcon } from 'lucide-react'; // For icons in getLayout
 
@@ -239,26 +238,25 @@ const ListingCategoriesPage: NextPageWithLayout = () => { // Use NextPageWithLay
 };
 
 // Define getLayout for this page
-ListingCategoriesPage.getLayout = function getLayout(page: React.ReactElement, pageProps: MyAppPageProps /*, headerMenuItems, footerMenuItems */) { // header/footerMenu not used here
-  // Prepare initial base elements for the AdminHeaderProvider
-  const pageTitle = pageProps.pageTitle || "Listing Categories"; 
-  const pageDescription = pageProps.pageDescription || "Manage all your listing categories"; 
-  const pageIconName = pageProps.pageIconName || "LayoutGrid"; 
+ListingCategoriesPage.getLayout = function getLayout(page: React.ReactElement, pageProps: MyAppPageProps) {
+  const defaultPageTitle = "Listing Categories";
+  const DefaultPageIcon = iconMap['Tag'] as LucideIcon;
 
-  const initialBaseElements: { title?: string; description?: string; icon?: React.ReactNode } = {};
-  if (pageTitle) initialBaseElements.title = pageTitle;
-  if (pageDescription) initialBaseElements.description = pageDescription;
-  if (pageIconName && typeof pageIconName === 'string') {
-    const IconComponent = iconMap[pageIconName as keyof typeof iconMap] as LucideIcon | undefined;
-    if (IconComponent) initialBaseElements.icon = <IconComponent />;
-  }
+  // Determine props for AdminLayout directly
+  const titleForLayout = pageProps?.pageTitle || defaultPageTitle;
+  const iconTypeForLayout = pageProps?.pageIcon ? (iconMap[pageProps.pageIcon as keyof typeof iconMap] || DefaultPageIcon) : DefaultPageIcon;
+  const descriptionForLayout = pageProps?.pageDescription || "Manage your listing categories.";
+  const actionButtonsForLayout = pageProps?.actionButtons;
 
   return (
-    <AdminHeaderProvider initialBaseElements={initialBaseElements}>
-      <AdminLayout>
-        {page}
-      </AdminLayout>
-    </AdminHeaderProvider>
+    <AdminLayout 
+      pageTitle={titleForLayout}
+      pageIcon={iconTypeForLayout}
+      pageDescription={descriptionForLayout}
+      actionButtons={actionButtonsForLayout}
+    >
+      {page}
+    </AdminLayout>
   );
 };
 

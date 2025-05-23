@@ -9,33 +9,46 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const session = await getServerSession(req, res, authOptions);
-  const { id } = req.query; // User ID from URL
+  const { id: idFromQuery } = req.query; // User ID from URL
 
   // @ts-ignore // session.user.role is custom field
   if (!session || session.user?.role !== UserRole.ADMIN) {
     return res.status(403).json({ message: 'Forbidden: Access denied.' });
   }
 
-  if (typeof id !== 'string') {
-    return res.status(400).json({ message: 'Invalid user ID.' });
+  if (typeof idFromQuery !== 'string') {
+    return res.status(400).json({ message: 'User ID must be a single string value.' });
+  }
+  const userIdString: string = idFromQuery; // Explicitly a string now
+
+  let userIdNum: number;
+  try {
+    userIdNum = parseInt(userIdString, 10); // Should be safe now
+    if (isNaN(userIdNum)) {
+      throw new Error('User ID must be a valid integer.');
+    }
+  } catch (error) {
+    return res.status(400).json({ message: (error as Error).message });
   }
 
   switch (req.method) {
     case 'GET':
       try {
         const user = await prisma.user.findUnique({
-          where: { id },
-          select: { // Exclude password
-            id: true, name: true, email: true, role: true, status: true, 
+          where: { user_id: userIdNum }, // Use user_id (number)
+          select: { // Exclude password, use correct field names
+            user_id: true, name: true, email: true, role: true, status: true, 
             createdAt: true, updatedAt: true, image: true, emailVerified: true
           }
         });
         if (!user) {
           return res.status(404).json({ message: 'User not found' });
         }
-        return res.status(200).json(user);
+        // Map user_id to id for the response if frontend expects 'id'
+        const { user_id, ...restOfUser } = user;
+        return res.status(200).json({ id: user_id, ...restOfUser });
       } catch (error) {
-        console.error(`Error fetching user ${id}:`, error);
+        console.error(`Error fetching user ${userIdNum}:`, error);
         return res.status(500).json({ message: 'Internal Server Error' });
       }
 
@@ -56,7 +69,7 @@ export default async function handler(
 
         // Prevent admin from demoting/suspending themselves via this specific endpoint if it's their own ID
         // @ts-ignore
-        if (session.user.id === id && (updateData.role === UserRole.USER || updateData.status === UserStatus.SUSPENDED)) {
+        if (session.user.id === userIdNum && (updateData.role === UserRole.USER || updateData.status === UserStatus.SUSPENDED)) {
             if (updateData.role === UserRole.USER) {
                  return res.status(400).json({ message: 'Admins cannot change their own role to USER.' });
             }
@@ -65,17 +78,19 @@ export default async function handler(
             }
         }
 
-        const updatedUser = await prisma.user.update({
-          where: { id },
+        const updatedUserFromDb = await prisma.user.update({
+          where: { user_id: userIdNum }, // Use user_id (number)
           data: updateData,
-          select: { // Exclude password
-            id: true, name: true, email: true, role: true, status: true, 
+          select: { // Exclude password, use correct field names
+            user_id: true, name: true, email: true, role: true, status: true, 
             createdAt: true, updatedAt: true
           }
         });
-        return res.status(200).json(updatedUser);
+        // Map user_id to id for the response
+        const { user_id: updated_user_id, ...restOfUpdatedUser } = updatedUserFromDb;
+        return res.status(200).json({ id: updated_user_id, ...restOfUpdatedUser });
       } catch (error: any) {
-        console.error(`Error updating user ${id}:`, error);
+        console.error(`Error updating user ${userIdNum}:`, error);
         if (error.code === 'P2025') { // Prisma code for record not found
           return res.status(404).json({ message: 'User not found' });
         }
@@ -89,16 +104,16 @@ export default async function handler(
       try {
         // Prevent admin from deleting themselves
         // @ts-ignore
-        if (session.user.id === id) {
+        if (session.user.id === userIdNum) {
           return res.status(400).json({ message: 'Admins cannot delete their own account.' });
         }
 
         await prisma.user.delete({
-          where: { id },
+          where: { user_id: userIdNum }, // Use user_id (number)
         });
         return res.status(204).end(); // No content
       } catch (error: any) {
-        console.error(`Error deleting user ${id}:`, error);
+        console.error(`Error deleting user ${userIdNum}:`, error);
         if (error.code === 'P2025') { // Prisma code for record not found
           return res.status(404).json({ message: 'User not found' });
         }

@@ -21,10 +21,10 @@ export default async function handler(
   }
 
   const { id } = req.query;
-  const categoryId = parseInt(id as string, 10);
+  const categoryId = id as string;
 
-  if (isNaN(categoryId)) {
-    return res.status(400).json({ error: 'Invalid category ID' });
+  if (!categoryId || typeof categoryId !== 'string') {
+    return res.status(400).json({ error: 'Invalid or missing category ID' });
   }
 
   switch (req.method) {
@@ -44,7 +44,7 @@ export default async function handler(
 
     case 'PUT':
       try {
-        const { name, slug, description, featureImageUrl, parentId, metaTitle, metaDescription, metaKeywords, status } = req.body;
+        const { name, slug, featureImageUrl } = req.body;
 
         if (!name || !slug) {
           return res.status(400).json({ error: 'Name and slug are required' });
@@ -70,13 +70,7 @@ export default async function handler(
           data: {
             name,
             slug,
-            description,
             featureImageUrl,
-            parentId: parentId ? parseInt(parentId as string, 10) : (parentId === null ? null : currentCategory.parentId), // Allow setting parentId to null
-            metaTitle,
-            metaDescription,
-            metaKeywords,
-            status,
           },
         });
         return res.status(200).json({ message: 'Category updated successfully', category: updatedCategory });

@@ -4,12 +4,59 @@ import { authOptions } from '../../auth/[...nextauth]';
 import prisma from '@/lib/prisma';
 import { Category } from '@prisma/client';
 
+/**
+ * @typedef {object} ResponseData
+ * @property {string} [message] - A success or informational message.
+ * @property {Category} [category] - A single category object.
+ * @property {string} [error] - An error message.
+ */
 type ResponseData = {
   message?: string;
   category?: Category;
   error?: string;
 };
 
+/**
+ * API handler for managing individual category resources.
+ * Supports fetching (GET), updating (PUT), and deleting (DELETE) a specific category by ID.
+ * Requires ADMIN privileges for all operations.
+ *
+ * @param {NextApiRequest} req The Next.js API request object.
+ * @param {NextApiResponse<ResponseData>} res The Next.js API response object.
+ *
+ * @route GET /api/admin/categories/{id}
+ * @description Fetches a specific category by its ID. Requires ADMIN role.
+ * @param {string} req.query.id - The ID of the category to fetch.
+ * @returns {Promise<void>} Responds with the category object or an error message.
+ * @successResponse 200 OK - { category: Category } An object containing the category.
+ * @errorResponse 400 Bad Request - If the category ID is missing or invalid.
+ * @errorResponse 401 Unauthorized - If the user is not an ADMIN.
+ * @errorResponse 404 Not Found - If the category with the specified ID is not found.
+ * @errorResponse 500 Internal Server Error - If an error occurs during fetching.
+ *
+ * @route PUT /api/admin/categories/{id}
+ * @description Updates a specific category by its ID. Requires ADMIN role.
+ * @param {string} req.query.id - The ID of the category to update.
+ * @bodyParam {string} name - The new name of the category.
+ * @bodyParam {string} slug - The new unique slug for the category URL.
+ * @bodyParam {string} [featureImageUrl] - Optional new URL for the category's feature image.
+ * @returns {Promise<void>} Responds with the updated category object and a success message, or an error message.
+ * @successResponse 200 OK - { message: string, category: Category } The updated category and a success message.
+ * @errorResponse 400 Bad Request - If required fields (name, slug) are missing, ID is invalid, or new slug is not unique.
+ * @errorResponse 401 Unauthorized - If the user is not an ADMIN.
+ * @errorResponse 404 Not Found - If the category to update is not found (Prisma P2025).
+ * @errorResponse 500 Internal Server Error - If an error occurs during update.
+ *
+ * @route DELETE /api/admin/categories/{id}
+ * @description Deletes a specific category by its ID. Requires ADMIN role.
+ * @param {string} req.query.id - The ID of the category to delete.
+ * @returns {Promise<void>} Responds with a success message or an error message.
+ * @successResponse 200 OK - { message: string } A success message.
+ * @errorResponse 400 Bad Request - If the category ID is missing or invalid.
+ * @errorResponse 401 Unauthorized - If the user is not an ADMIN.
+ * @errorResponse 404 Not Found - If the category to delete is not found (Prisma P2025).
+ * @errorResponse 500 Internal Server Error - If an error occurs during deletion (e.g., foreign key constraints).
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>

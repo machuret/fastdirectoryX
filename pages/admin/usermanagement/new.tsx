@@ -6,17 +6,38 @@ import Link from 'next/link';
 import AdminLayout from '@/components/AdminLayout'; // Assuming path to AdminLayout
 import { UserRole, UserStatus } from '@prisma/client';
 
+/**
+ * Page component for creating a new user in the admin panel.
+ * It provides a form to input user details (name, email, password, role, status)
+ * and handles the submission to the backend API.
+ * @returns {JSX.Element} The rendered new user creation page.
+ */
 const NewUserPage: NextPage = () => {
   const router = useRouter();
+  /** State for the user's full name. */
   const [name, setName] = useState('');
+  /** State for the user's email address. */
   const [email, setEmail] = useState('');
+  /** State for the user's password. */
   const [password, setPassword] = useState('');
+  /** State for the user's role, defaults to USER. */
   const [role, setRole] = useState<UserRole>(UserRole.USER);
+  /** State for the user's status, defaults to ACTIVE. */
   const [status, setStatus] = useState<UserStatus>(UserStatus.ACTIVE);
+  /** State for storing and displaying error messages. */
   const [error, setError] = useState<string | null>(null);
+  /** State for storing and displaying success messages. */
   const [success, setSuccess] = useState<string | null>(null);
+  /** State to indicate if a form submission is in progress. */
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Handles the form submission for creating a new user.
+   * Performs client-side validation, sends a POST request to the `/api/admin/users` endpoint,
+   * and manages UI feedback (error/success messages, loading state).
+   * Redirects to the user management list on successful creation.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -144,6 +165,13 @@ const NewUserPage: NextPage = () => {
   );
 };
 
+/**
+ * Server-side properties for the New User page.
+ * Ensures that only authenticated admin users can access this page.
+ * Redirects to the login page if the user is not an admin.
+ * @param {GetServerSidePropsContext} context - The Next.js context object for server-side props.
+ * @returns {Promise<GetServerSidePropsResult<{}>>} An empty props object if authorized, or a redirect object.
+ */
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
 

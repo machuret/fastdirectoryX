@@ -19,22 +19,41 @@ import { Category } from '@prisma/client';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+/**
+ * Defines the structure for the category edit form data.
+ */
 interface EditCategoryFormState {
+  /** The name of the category. */
   name: string;
+  /** The URL-friendly slug for the category. */
   slug: string;
+  /** A detailed description of the category. */
   description: string;
+  /** URL of the category's featured image. */
   featureImageUrl: string;
+  /** ID of the parent category, if any. Stored as string for select input. */
   parentId: string; 
+  /** SEO meta title for the category page. */
   metaTitle: string;
+  /** SEO meta description for the category page. */
   metaDescription: string;
+  /** SEO meta keywords for the category page. */
   metaKeywords: string;
+  /** The status of the category (e.g., 'ACTIVE', 'INACTIVE'). */
   status: string;
 }
 
+/**
+ * Page component for editing an existing category.
+ * Fetches category data based on the ID from the URL query.
+ * Provides a form to modify category details, including name, slug, description,
+ * parent category, feature image, and SEO meta tags.
+ */
 const EditCategoryPage: NextPage = () => {
   const router = useRouter();
   const { id: categoryId } = router.query;
 
+  /** State object holding all form data for the category being edited. */
   const [formData, setFormData] = useState<EditCategoryFormState>({
     name: '',
     slug: '',
@@ -46,16 +65,27 @@ const EditCategoryPage: NextPage = () => {
     metaKeywords: '',
     status: 'ACTIVE',
   });
+  /** State for storing all existing categories, used for parent category selection. */
   const [allCategories, setAllCategories] = useState<Category[]>([]);
+  /** State to indicate if the form is currently being submitted. */
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** State to indicate if the initial category data is currently being loaded. */
   const [isLoading, setIsLoading] = useState(true);
+  /** State for the selected feature image file (if a new one is chosen). */
   const [imageFile, setImageFile] = useState<File | null>(null);
+  /** State for the URL preview of the selected or existing feature image. */
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  /** State for storing image upload error messages. */
   const [uploadError, setUploadError] = useState<string | null>(null);
+  /** State to indicate if an image upload is currently in progress. */
   const [isUploading, setIsUploading] = useState(false);
+  /** State to store the initial feature image URL loaded with the category, for potential revert on upload error. */
   const [initialFeatureImageUrl, setInitialFeatureImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    /**
+     * Fetches all existing categories to populate the parent category dropdown.
+     */
     const fetchParentCategories = async () => {
       try {
         const res = await fetch('/api/admin/categories');
@@ -73,6 +103,10 @@ const EditCategoryPage: NextPage = () => {
   useEffect(() => {
     if (categoryId) {
       setIsLoading(true);
+      /**
+       * Fetches the data for the category being edited from the API.
+       * Populates the form and image preview states with the fetched data.
+       */
       const fetchCategoryData = async () => {
         try {
           const res = await fetch(`/api/admin/categories/${categoryId}`);
@@ -108,15 +142,30 @@ const EditCategoryPage: NextPage = () => {
     }
   }, [categoryId, router]);
 
+  /**
+   * Handles changes to text input and textarea fields in the form.
+   * Updates the corresponding field in `formData`.
+   * @param {ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event.
+   */
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Handles changes to select input fields (e.g., parent category, status).
+   * @param {keyof EditCategoryFormState} name - The name of the form field to update.
+   * @param {string} value - The new value for the field.
+   */
   const handleSelectChange = (name: keyof EditCategoryFormState, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Handles the file selection for replacing the feature image.
+   * Validates file size, sets image preview, and initiates upload of the new image.
+   * @param {ChangeEvent<HTMLInputElement>} e - The file input change event.
+   */
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -134,6 +183,11 @@ const EditCategoryPage: NextPage = () => {
     }
   };
 
+  /**
+   * Uploads the selected image file to the server.
+   * Updates `formData.featureImageUrl` on success. On failure, may revert to `initialFeatureImageUrl`.
+   * @param {File | null} fileToUpload - The file to upload. Defaults to `imageFile` state.
+   */
   const handleImageUpload = async (fileToUpload: File | null = imageFile) => {
     if (!fileToUpload) return;
     setIsUploading(true);
@@ -164,6 +218,12 @@ const EditCategoryPage: NextPage = () => {
     }
   };
 
+  /**
+   * Removes the currently selected/uploaded feature image from the form.
+   * Clears the image file, preview, and the `featureImageUrl` in `formData`.
+   * Also clears `initialFeatureImageUrl` to prevent unintended reverts.
+   * Resets the file input field.
+   */
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
@@ -176,6 +236,12 @@ const EditCategoryPage: NextPage = () => {
     toast.info('Image removed.');
   };
 
+  /**
+   * Handles the form submission to update the existing category.
+   * Validates required fields, sends a PUT request to the API, and handles the response.
+   * Navigates to the category list page on success.
+   * @param {FormEvent<HTMLFormElement>} e - The form submission event.
+   */
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.name || !formData.slug) {

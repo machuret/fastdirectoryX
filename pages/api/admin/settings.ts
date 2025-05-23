@@ -2,14 +2,43 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/lib/prisma';
 import withAdminAuth from '@/hoc/withAdminAuth'; 
 
+/**
+ * Interface representing the data structure for a single site setting.
+ */
 interface SiteSettingData {
+  /** The unique key for the setting (e.g., 'siteName', 'maintenanceMode'). */
   key: string;
+  /** The value of the setting. Can be null if the setting is not set. */
   value: string | null;
+  /** An optional human-readable label for the setting (e.g., 'Site Name'). */
   label?: string;
+  /** An optional group name to categorize the setting (e.g., 'General', 'Appearance'). */
   group?: string;
+  /** An optional type hint for the setting's value (e.g., 'string', 'boolean', 'number'). */
   type?: string;
 }
 
+/**
+ * API handler for managing site-wide settings.
+ * Authentication and admin access are handled by the `withAdminAuth` higher-order component.
+ *
+ * @param {NextApiRequest} req The Next.js API request object.
+ * @param {NextApiResponse} res The Next.js API response object.
+ *
+ * @route GET /api/admin/settings
+ * @description Fetches all site settings.
+ * @returns {Promise<void>} Responds with an array and an object representation of all settings.
+ * @successResponse 200 OK - { settingsArray: SiteSettingData[], settingsObject: Record<string, string | null> }
+ * @errorResponse 500 Internal Server Error - If an error occurs while fetching settings.
+ *
+ * @route POST /api/admin/settings
+ * @description Saves/updates multiple site settings in a batch (upsert behavior).
+ * @bodyParam {SiteSettingData[]} body - An array of setting objects to save.
+ * @returns {Promise<void>} Responds with a success message and the saved settings data.
+ * @successResponse 200 OK - { message: string, data: SiteSettingData[] } Settings saved successfully.
+ * @errorResponse 400 Bad Request - If the request body is not an array of settings.
+ * @errorResponse 500 Internal Server Error - If an error occurs while saving settings.
+ */
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {

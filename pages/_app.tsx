@@ -10,6 +10,7 @@ import { useRouter } from 'next/router';
 import { DisplayMenuItemFE, getMenuItemsForLocation } from '@/lib/menu'; 
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
+import ErrorBoundary from '@/components/ErrorBoundary'; 
 
 // Add NextPage type with optional getLayout property
 import type { NextPage } from 'next';
@@ -80,8 +81,10 @@ function MyApp({ Component, pageProps, headerMenuItems, footerMenuItems }: MyApp
     <SessionProvider session={pageProps.session}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {/* <AuthProvider> */}
+        <ErrorBoundary>
           {pageContent}
-          <Toaster />
+        </ErrorBoundary>
+        <Toaster />
         {/* </AuthProvider> */}
       </ThemeProvider>
     </SessionProvider>

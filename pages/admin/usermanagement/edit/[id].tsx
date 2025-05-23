@@ -6,32 +6,64 @@ import Link from 'next/link';
 import AdminLayout from '@/components/AdminLayout'; // Assuming path
 import { UserRole, UserStatus } from '@prisma/client';
 
+/**
+ * Interface representing the data structure for a user being edited.
+ */
 interface UserToEdit {
+  /** The unique identifier of the user. */
   id: string;
+  /** The current name of the user (can be null). */
   name: string | null;
+  /** The current email address of the user. */
   email: string;
+  /** The current role of the user. */
   role: UserRole;
+  /** The current status of the user. */
   status: UserStatus;
 }
 
+/**
+ * Props for the {@link EditUserPage} component.
+ */
 interface EditUserPageProps {
+  /** The user data to be edited, fetched server-side. Null if not found or error occurred. */
   user: UserToEdit | null;
+  /** Optional error message if fetching the user failed server-side. */
   error?: string;
 }
 
+/**
+ * Page component for editing an existing user's details in the admin panel.
+ * Fetches user data server-side based on the ID in the URL.
+ * Provides a form to modify user details and handles submission to the backend API.
+ * Includes protection against an admin demoting or suspending their own account.
+ * @param {EditUserPageProps} props - The props for the component, including initial user data or an error.
+ * @returns {JSX.Element} The rendered user edit page.
+ */
 const EditUserPage: NextPage<EditUserPageProps> = ({ user: initialUser, error: initialError }) => {
   const router = useRouter();
   const { data: session } = useSession(); // For checking current admin ID
 
+  /** State for the user's full name, initialized from props. */
   const [name, setName] = useState(initialUser?.name || '');
+  /** State for the user's email address, initialized from props. */
   const [email, setEmail] = useState(initialUser?.email || '');
+  /** State for the user's role, initialized from props. */
   const [role, setRole] = useState<UserRole>(initialUser?.role || UserRole.USER);
+  /** State for the user's status, initialized from props. */
   const [status, setStatus] = useState<UserStatus>(initialUser?.status || UserStatus.ACTIVE);
   
+  /** State for storing and displaying form-specific error messages. */
   const [formError, setFormError] = useState<string | null>(initialError || null);
+  /** State for storing and displaying success messages. */
   const [success, setSuccess] = useState<string | null>(null);
+  /** State to indicate if a form submission is in progress. */
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Effect hook to update form fields if the `initialUser` prop changes.
+   * This ensures the form reflects the latest data if the page is re-rendered with new props.
+   */
   useEffect(() => {
     if (initialUser) {
       setName(initialUser.name || '');
@@ -41,6 +73,15 @@ const EditUserPage: NextPage<EditUserPageProps> = ({ user: initialUser, error: i
     }
   }, [initialUser]);
 
+  /**
+   * Handles the form submission for updating an existing user.
+   * Performs client-side validation, including checks to prevent an admin from
+   * demoting their own role to USER or suspending their own account.
+   * Sends a PUT request to the `/api/admin/users/:id` endpoint.
+   * Manages UI feedback (error/success messages, loading state).
+   * Redirects to the user management list on successful update.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -197,6 +238,15 @@ const EditUserPage: NextPage<EditUserPageProps> = ({ user: initialUser, error: i
   );
 };
 
+/**
+ * Server-side properties for the Edit User page.
+ * Ensures that only authenticated admin users can access this page.
+ * Fetches the specific user's data based on the ID from the URL query parameters.
+ * Redirects to login if not authorized or if the user ID is missing.
+ * Returns the user data or an error message as props.
+ * @param {GetServerSidePropsContext} context - The Next.js context object for server-side props.
+ * @returns {Promise<GetServerSidePropsResult<EditUserPageProps>>} The server-side props, including user data or an error/redirect.
+ */
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
   const { id } = context.params || {};

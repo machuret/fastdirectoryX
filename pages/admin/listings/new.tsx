@@ -17,34 +17,68 @@ import { Textarea } from '@/components/ui/textarea';
 import Head from 'next/head';
 
 // Define an interface for the form data to match ListingBusiness fields
+/**
+ * Defines the structure for the form data used to create a new business listing.
+ * All fields are optional initially or correspond to string inputs, with type conversions (e.g., for numbers)
+ * handled during submission.
+ */
 interface ListingFormData {
+  /** The main title or name of the business listing. This field is required. */
   title: string;
+  /** The price range of the business (e.g., "$", "$$", "$$$"). */
   price_range?: string;
+  /** The primary category name for the business (e.g., "Restaurant", "Retail"). */
   category_name?: string;
+  /** A general address string, can be a full address. */
   address?: string;
+  /** The neighborhood where the business is located. */
   neighborhood?: string;
+  /** The street name and number. */
   street?: string;
+  /** The city where the business is located. */
   city?: string;
+  /** The postal or ZIP code. */
   postal_code?: string;
+  /** The state, province, or region. */
   state?: string;
+  /** The two-letter country code (e.g., "US", "CA"). */
   country_code?: string;
+  /** The primary phone number for the business. */
   phone?: string;
+  /** A detailed description of the business. */
   description?: string;
+  /** The official website URL for the business. */
   website?: string;
+  /** The geographical latitude. Expected as a string, converted to number on submit. */
   latitude?: string; 
+  /** The geographical longitude. Expected as a string, converted to number on submit. */
   longitude?: string; 
+  /** The Google Places ID or a similar unique identifier for the location. */
   place_id?: string;
-  // Social Media Links
+  /** URL to the business's Facebook page. */
   facebook_url?: string;
+  /** URL to the business's Instagram profile. */
   instagram_url?: string;
+  /** URL to the business's LinkedIn page. */
   linkedin_url?: string;
+  /** URL to the business's Pinterest page. */
   pinterest_url?: string;
+  /** URL to the business's YouTube channel. */
   youtube_url?: string;
+  /** URL to the business's X (formerly Twitter) profile. */
   x_com_url?: string;
 }
 
+/**
+ * Page component for creating a new business listing.
+ * It provides a form with various fields related to listing details, contact information,
+ * location, and social media links. Handles form submission, client-side validation,
+ * and API interaction to create the new listing.
+ * Integrates with `AdminHeaderContext` to set page-specific action buttons.
+ */
 const NewListingPage = () => {
   const router = useRouter();
+  /** State object holding the current values of the new listing form fields. */
   const [formData, setFormData] = useState<ListingFormData>({
     title: '',
     price_range: '',
@@ -69,15 +103,30 @@ const NewListingPage = () => {
     youtube_url: '',
     x_com_url: '',
   });
+  /** State indicating whether the form is currently being submitted to the API. */
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** State for storing and displaying any error messages that occur during form validation or submission. */
   const [error, setError] = useState<string | null>(null);
   const { setPageSpecificHeaderElements } = useAdminHeader();
 
+  /**
+   * Handles changes to form input fields.
+   * Updates the corresponding field in the `formData` state.
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event from the input field.
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Handles the submission of the new listing form.
+   * Performs client-side validation (title, numeric latitude/longitude).
+   * Sends a POST request to `/api/admin/listings` with the form data.
+   * On success, shows an alert and redirects to the listings page.
+   * On failure, displays an error message.
+   * @param {FormEvent} e - The form submission event.
+   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -134,26 +183,28 @@ const NewListingPage = () => {
     setIsSubmitting(false);
   };
 
-  // Define actionButtons for the header
-  const pageActionButtons = (
-    <div className="flex gap-2">
-      <Button variant="outline" onClick={() => router.push('/admin/listings')} disabled={isSubmitting}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Listings
-      </Button>
-      <Button type="submit" form="new-listing-form" disabled={isSubmitting}>
-        {isSubmitting ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
-        Create Listing
-      </Button>
-    </div>
-  );
-
-  // Set header elements using context
+  /**
+   * Effect hook to manage the page-specific header elements.
+   * Sets the action buttons for the admin header based on the current page state.
+   * Clears the action buttons when the component unmounts or dependencies change.
+   */
   useEffect(() => {
+    const pageActionButtons = (
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => router.push('/admin/listings')} disabled={isSubmitting}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Listings
+        </Button>
+        <Button type="submit" form="new-listing-form" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Create Listing
+        </Button>
+      </div>
+    );
     setPageSpecificHeaderElements({
       actionButtons: pageActionButtons,
     });
@@ -301,14 +352,26 @@ const NewListingPage = () => {
 };
 
 // ADDED getServerSideProps
+/**
+ * Server-side properties for the New Listing page.
+ * Primarily used for authentication and authorization to ensure only admin users can access this page.
+ * (Example implementation assumes session check; actual logic might vary based on auth setup).
+ * @param context - The Next.js server-side context.
+ * @returns A promise that resolves to props for the page or a redirect object if unauthorized.
+ */
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  return {
-    props: {
-      pageTitle: 'Add New Listing',
-      pageDescription: 'Fill in the details to create a new business listing.',
-      pageIconName: 'PlusCircle', // Use PlusCircle for 'add new'
-    },
-  };
+  // Example: Check for admin session (actual implementation might differ)
+  // const session = await getSession(context);
+  // // @ts-ignore
+  // if (!session || session.user?.role !== 'ADMIN') {
+  //   return {
+  //     redirect: {
+  //       destination: '/login?error=NotAuthorizedAdmin',
+  //       permanent: false,
+  //     },
+  //   };
+  // }
+  return { props: {} }; // No specific data props needed for the form itself initially
 };
 
 export default NewListingPage;

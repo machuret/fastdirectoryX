@@ -14,58 +14,117 @@ import {
 } from 'lucide-react';
 
 // Define types for the serialized data expected from the API
+/**
+ * Represents a single FAQ item with a question and an answer.
+ */
 interface FAQItem {
+  /** The question part of the FAQ. */
   question: string;
+  /** The answer part of the FAQ. */
   answer: string;
 }
 
+/**
+ * Represents a serialized review as returned by the admin API for a listing.
+ * Note: Review ratings and dates are represented as strings due to potential serialization of Decimal/DateTime.
+ */
 interface AdminSerializedReview {
+  /** Unique identifier for the review. */
   review_id: string;
+  /** Name of the reviewer. */
   reviewer_name?: string | null;
+  /** Text content of the review. */
   review_text?: string | null;
+  /** Rating given in the review (serialized as string). */
   rating?: string | null; 
+  /** Date when the review was published (serialized as string). */
   published_at_date?: string | null; 
 }
 
+/**
+ * Represents a serialized image URL associated with a listing, as returned by the admin API.
+ */
 interface SerializedAdminListingImageUrl {
+  /** Unique identifier for the image URL record. */
   image_url_id: string;
+  /** The actual URL of the image. */
   url: string;
+  /** Optional description for the image. */
   description?: string | null;
+  /** Flag indicating if this is the primary cover image for the listing. */
   is_cover_image: boolean;
 }
 
+/**
+ * Represents the detailed structure of a business listing as fetched from the admin API.
+ * Contains various fields including basic info, contact, location, images, reviews, and FAQs.
+ * Timestamps and numerical values like latitude/longitude might be serialized as strings.
+ */
 interface AdminSerializedListing {
+  /** Unique identifier for the business listing. */
   business_id: string;
+  /** The title or name of the business. */
   title: string;
+  /** Price range (e.g., "$", "$$"). */
   price_range?: string | null;
+  /** Primary category name. */
   category_name?: string | null;
+  /** Full address string. */
   address?: string | null;
+  /** Neighborhood. */
   neighborhood?: string | null;
+  /** Street address. */
   street?: string | null;
+  /** City. */
   city?: string | null;
+  /** Postal or ZIP code. */
   postal_code?: string | null;
+  /** State or province. */
   state?: string | null;
+  /** Two-letter country code. */
   country_code?: string | null;
+  /** Primary phone number. */
   phone?: string | null;
+  /** Detailed description of the business. */
   description?: string | null;
+  /** Official website URL. */
   website?: string | null;
+  /** Geographical latitude (serialized as string). */
   latitude?: string | null; 
+  /** Geographical longitude (serialized as string). */
   longitude?: string | null; 
+  /** Google Places ID or similar identifier. */
   place_id?: string | null;
+  /** URL of the main image for the listing. */
   image_url?: string | null; 
+  /** Array of gallery images associated with the listing. */
   imageUrls?: SerializedAdminListingImageUrl[]; 
+  /** Timestamp of the last update (serialized as string). */
   updatedAt: string; 
+  /** Timestamp of when the listing was last scraped (serialized as string). */
   scraped_at?: string | null; 
+  /** Array of reviews for the listing. */
   reviews?: AdminSerializedReview[];
+  /** Array of FAQ items for the listing. */
   faq?: FAQItem[] | null; 
+  /** URL to the business's Facebook page. */
   facebook_url?: string | null;
+  /** URL to the business's Instagram profile. */
   instagram_url?: string | null;
+  /** URL to the business's LinkedIn page. */
   linkedin_url?: string | null;
+  /** URL to the business's Pinterest page. */
   pinterest_url?: string | null;
+  /** URL to the business's YouTube channel. */
   youtube_url?: string | null;
+  /** URL to the business's X (formerly Twitter) profile. */
   x_com_url?: string | null;
 }
 
+/**
+ * Defines the structure for the form data used to edit an existing business listing.
+ * Mirrors many fields from `AdminSerializedListing` but is adapted for form input state.
+ */
 interface ListingFormData {
   title: string;
   price_range?: string;
@@ -84,7 +143,9 @@ interface ListingFormData {
   longitude?: string;
   place_id?: string;
   image_url?: string; 
+  /** Array of gallery images being edited or added in the form. */
   galleryImages: GalleryImageFormItem[]; 
+  /** Array of FAQ items being edited or added in the form. */
   faq?: FAQItem[]; 
   facebook_url?: string;
   instagram_url?: string;
@@ -94,17 +155,31 @@ interface ListingFormData {
   x_com_url?: string;
 }
 
+/**
+ * Represents a single gallery image item within the listing edit form.
+ */
 interface GalleryImageFormItem {
+  /** Optional ID of an existing image (if editing). */
   id?: string; 
+  /** URL of the gallery image. */
   url: string;
+  /** Description for the gallery image. */
   description: string;
 }
 
+/**
+ * Page component for editing an existing business listing.
+ * Fetches listing data by ID, populates a form, allows modification of various fields
+ * including gallery images and FAQs, and handles submission to update the listing.
+ * Also includes functionality to generate FAQs using an API endpoint.
+ */
 const EditListingPage = () => {
   const router = useRouter();
   const { id } = router.query; 
 
+  /** State for the originally fetched listing data. */
   const [listing, setListing] = useState<AdminSerializedListing | null>(null);
+  /** State for the form data being edited by the user. */
   const [formData, setFormData] = useState<ListingFormData>({
     title: '',
     price_range: '', category_name: '', address: '', neighborhood: '', street: '',
@@ -120,16 +195,28 @@ const EditListingPage = () => {
     youtube_url: '',
     x_com_url: '',
   });
+  /** State indicating if the listing data is currently being fetched. */
   const [isLoading, setIsLoading] = useState(true);
+  /** State indicating if the form is currently being submitted. */
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /** State for storing and displaying error messages related to data fetching or submission. */
   const [error, setError] = useState<string | null>(null);
+  /** State for displaying a success message after a successful form submission. */
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
   // State for FAQ Generation (will be handled later)
+  /** State indicating if FAQs are currently being generated via API. */
   const [isGeneratingFaq, setIsGeneratingFaq] = useState(false);
+  /** State for displaying messages related to FAQ generation (success or error). */
   const [faqGenerationMessage, setFaqGenerationMessage] = useState<string | null>(null);
+  /** State holding the current list of FAQs, potentially updated by generation. */
   const [currentFaq, setCurrentFaq] = useState<FAQItem[]>([]);
 
+  /**
+   * Effect hook to fetch listing data when the component mounts or the `id` parameter changes.
+   * Fetches from `/api/admin/listings/:id` and populates `listing` and `formData` states.
+   * Handles loading and error states during the fetch operation.
+   */
   useEffect(() => {
     if (id && typeof id === 'string') { 
       setIsLoading(true);
@@ -192,6 +279,10 @@ const EditListingPage = () => {
     }
   }, [id]);
 
+  /**
+   * Handles changes to input fields within the form.
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event.
+   */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -199,6 +290,14 @@ const EditListingPage = () => {
     setSubmitSuccess(null); // Clear success message on change
   };
 
+  /**
+   * Handles the submission of the edited listing form.
+   * Performs client-side validation (title, numeric latitude/longitude).
+   * Sends a PUT request to `/api/admin/listings/:id` with the form data.
+   * On success, displays a success message and refetches listing data.
+   * On failure, displays an error message.
+   * @param {FormEvent} e - The form submission event.
+   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -266,6 +365,12 @@ const EditListingPage = () => {
   };
 
   // --- Gallery Image Handlers (to be refactored with Shadcn UI later) --- 
+  /**
+   * Handles changes to input fields within a specific gallery image item.
+   * @param {number} index - The index of the gallery image item in the `formData.galleryImages` array.
+   * @param {keyof Omit<GalleryImageFormItem, 'id'>} field - The field being updated (e.g., 'url', 'description').
+   * @param {string} value - The new value for the field.
+   */
   const handleGalleryImageChange = (index: number, field: keyof Omit<GalleryImageFormItem, 'id'>, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -275,6 +380,9 @@ const EditListingPage = () => {
     }));
   };
 
+  /**
+   * Adds a new, empty gallery image field to the form.
+   */
   const addGalleryImageField = () => {
     setFormData(prev => ({
       ...prev,
@@ -282,6 +390,10 @@ const EditListingPage = () => {
     }));
   };
 
+  /**
+   * Removes a gallery image field from the form at the specified index.
+   * @param {number} index - The index of the gallery image item to remove.
+   */
   const removeGalleryImageField = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -290,6 +402,12 @@ const EditListingPage = () => {
   };
 
   // --- FAQ Handlers (to be refactored with Shadcn UI later) ---
+  /**
+   * Handles changes to input fields (question or answer) within a specific FAQ item.
+   * @param {number} index - The index of the FAQ item in the `formData.faq` array.
+   * @param {keyof FAQItem} field - The field being updated (e.g., 'question', 'answer').
+   * @param {string} value - The new value for the field.
+   */
   const handleFaqChange = (index: number, field: keyof FAQItem, value: string) => {
     const updatedFaq = [...currentFaq];
     updatedFaq[index] = { ...updatedFaq[index], [field]: value };
@@ -297,18 +415,31 @@ const EditListingPage = () => {
     setFormData(prev => ({ ...prev, faq: updatedFaq }));
   };
 
+  /**
+   * Adds a new, empty FAQ field (question and answer) to the form.
+   */
   const addFaqItem = () => {
     const newFaq = [...currentFaq, { question: '', answer: '' }];
     setCurrentFaq(newFaq);
     setFormData(prev => ({ ...prev, faq: newFaq }));
   };
 
+  /**
+   * Removes an FAQ field from the form at the specified index.
+   * @param {number} index - The index of the FAQ item to remove.
+   */
   const removeFaqItem = (index: number) => {
     const updatedFaq = currentFaq.filter((_, i) => i !== index);
     setCurrentFaq(updatedFaq);
     setFormData(prev => ({ ...prev, faq: updatedFaq }));
   };
 
+  /**
+   * Handles the generation of FAQs for the current listing using an API call.
+   * Sends a POST request to `/api/admin/listings/generate-faq`.
+   * Updates `currentFaq` and `formData.faq` with the generated FAQs on success.
+   * Manages loading states and displays feedback messages.
+   */
   const generateFaq = async () => {
     // ... (FAQ generation logic - to be reviewed/refactored later)
     if (!listing?.description) {

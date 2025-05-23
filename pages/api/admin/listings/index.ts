@@ -4,6 +4,11 @@ import { getSession } from 'next-auth/react'; // For authentication
 import { ListingBusiness, ListingReview, Prisma } from '@prisma/client'; // Import ListingBusiness type & ListingReview, and Prisma namespace
 import { generateUniqueSlug } from '@/lib/utils'; // Import the slug utility
 
+/**
+ * Represents a listing business object serialized for API admin responses.
+ * Dates are converted to ISO strings, and numeric IDs/coordinates to strings.
+ * Counts for reviews and images are included.
+ */
 export interface SerializedListingBusiness extends Omit<ListingBusiness, 
   'business_id' | 
   'latitude' | 
@@ -37,6 +42,10 @@ export interface SerializedListingBusiness extends Omit<ListingBusiness,
 }
 
 // Type for items from the initial prisma.listingBusiness.findMany query
+/**
+ * Represents the selected data structure for listings when initially fetched from the database
+ * for the admin listing view. Includes fields necessary for display and further processing.
+ */
 interface SelectedListingData {
   business_id: number;
   title: string;
@@ -68,6 +77,15 @@ interface SelectedListingData {
 }
 
 // Utility function to serialize ListingBusiness data
+/**
+ * Serializes a ListingBusiness object (potentially with relations like reviews and imageUrls)
+ * into a `SerializedListingBusiness` object suitable for API responses.
+ * Converts dates to ISO strings, Decimal types to strings, and handles counts.
+ *
+ * @param listingWithRelations - The ListingBusiness object, possibly including its relations
+ *                                 (reviews, imageUrls) and _count for related items.
+ * @returns A `SerializedListingBusiness` object or `null` if the input is null.
+ */
 export function serializeAdminListing(
   listingWithRelations: (ListingBusiness & { 
     reviews?: ListingReview[],
@@ -113,6 +131,51 @@ export function serializeAdminListing(
   };
 }
 
+/**
+ * API handler for managing business listing collections.
+ * Supports fetching all listings (GET) and creating new listings (POST).
+ * Authentication (e.g., admin check) is currently commented out but should be implemented.
+ *
+ * @param {NextApiRequest} req The Next.js API request object.
+ * @param {NextApiResponse} res The Next.js API response object.
+ *
+ * @route GET /api/admin/listings
+ * @description Fetches all business listings. Supports a 'minimal' version for dropdowns.
+ * @queryParam {string} [minimal] - If 'true', returns a minimal list (id, title).
+ * @returns {Promise<void>} Responds with an array of listings or an error message.
+ * @successResponse 200 OK - {SerializedListingBusiness[] | {business_id: string, title: string}[]} Array of listings.
+ * @errorResponse 500 Internal Server Error - If an error occurs during fetching.
+ *
+ * @route POST /api/admin/listings
+ * @description Creates a new business listing.
+ * @bodyParam {string} title - The title of the listing (required).
+ * @bodyParam {string} [price_range] - The price range of the business.
+ * @bodyParam {string} [category_name] - The name of the category.
+ * @bodyParam {string} [address] - Full address.
+ * @bodyParam {string} [neighborhood] - Neighborhood.
+ * @bodyParam {string} [street] - Street address.
+ * @bodyParam {string} [city] - City.
+ * @bodyParam {string} [postal_code] - Postal code.
+ * @bodyParam {string} [state] - State or region.
+ * @bodyParam {string} [country_code] - Country code.
+ * @bodyParam {string} [phone] - Phone number.
+ * @bodyParam {string} [description] - Description of the business.
+ * @bodyParam {string} [website] - Website URL.
+ * @bodyParam {string | number} [latitude] - Latitude coordinate.
+ * @bodyParam {string | number} [longitude] - Longitude coordinate.
+ * @bodyParam {string} [place_id] - Google Place ID (if available, checked for uniqueness).
+ * @bodyParam {string} [facebook_url] - Facebook profile URL.
+ * @bodyParam {string} [instagram_url] - Instagram profile URL.
+ * @bodyParam {string} [linkedin_url] - LinkedIn profile URL.
+ * @bodyParam {string} [pinterest_url] - Pinterest profile URL.
+ * @bodyParam {string} [youtube_url] - YouTube channel URL.
+ * @bodyParam {string} [x_com_url] - X (formerly Twitter) profile URL.
+ * @returns {Promise<void>} Responds with the newly created listing object or an error message.
+ * @successResponse 201 Created - {SerializedListingBusiness} The newly created listing.
+ * @errorResponse 400 Bad Request - If required fields are missing or data is invalid (e.g., lat/lon format).
+ * @errorResponse 409 Conflict - If a listing with the same `place_id` or `slug` (derived from title) already exists.
+ * @errorResponse 500 Internal Server Error - If an error occurs during creation.
+ */
 export default async function handle(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession({ req });
 

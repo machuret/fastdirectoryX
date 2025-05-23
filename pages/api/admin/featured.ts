@@ -3,12 +3,42 @@ import { getSession } from 'next-auth/react';
 import prisma from '@/lib/prisma';
 import { UserRole } from '@prisma/client'; // Assuming you have UserRole enum
 
+/**
+ * Defines the structure of the request body for updating featured statuses.
+ * It's an object where keys are string representations of `listing_business_id`
+ * and values are booleans indicating the new `isFeatured` status.
+ *
+ * @example
+ * {
+ *   "123": true,  // Set listing with ID 123 to featured
+ *   "456": false  // Set listing with ID 456 to not featured
+ * }
+ */
 interface UpdateFeaturedStatusRequestBody {
   // Example: { '123': true, '456': false }
   // Where keys are listing_business_id (as string) and values are the new isFeatured status
   [listingId: string]: boolean;
 }
 
+/**
+ * API handler for batch updating the `isFeatured` status of business listings.
+ * Requires ADMIN privileges.
+ * Accepts a PUT request with a body mapping listing IDs to their new featured status.
+ *
+ * @param {NextApiRequest} req The Next.js API request object.
+ * @param {NextApiResponse} res The Next.js API response object.
+ *
+ * @route PUT /api/admin/featured
+ * @description Batch updates the `isFeatured` status for multiple listings.
+ * @header Content-Type application/json
+ * @bodyParam {UpdateFeaturedStatusRequestBody} body - An object where keys are listing IDs (string) and values are booleans (new featured status).
+ * @returns {Promise<void>} Responds with a success or error message.
+ * @successResponse 200 OK - { message: string } "Featured statuses updated successfully." or "No valid updates to perform."
+ * @errorResponse 400 Bad Request - If the request body is invalid.
+ * @errorResponse 403 Forbidden - If the user is not an ADMIN.
+ * @errorResponse 405 Method Not Allowed - If the request method is not PUT.
+ * @errorResponse 500 Internal Server Error - If an error occurs during the database update.
+ */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession({ req });
 

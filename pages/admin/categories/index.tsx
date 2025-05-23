@@ -31,17 +31,37 @@ import { MoreHorizontal, PlusCircle, Image as ImageIcon, LayoutGrid } from 'luci
 import { Category } from '@prisma/client';
 import { toast } from 'sonner'; // Assuming sonner for toasts
 
+/**
+ * Extends the Prisma `Category` type to optionally include a nested `parent` category object.
+ * This is useful if the API returns parent category details alongside each category.
+ */
 interface CategoryWithParent extends Category {
+  /** Optional parent category details. */
   parent?: Category | null;
 }
 
+/**
+ * Admin page for managing categories.
+ * Displays a list of categories with options to add, edit, and delete them.
+ * Fetches category data from the API and handles user interactions for management tasks.
+ */
 const AdminCategoriesPage: NextPage = () => {
+  /** State for the array of categories displayed on the page. */
   const [categories, setCategories] = useState<CategoryWithParent[]>([]);
+  /** State to indicate if categories are currently being fetched. */
   const [loading, setLoading] = useState(true);
+  /** State for storing and displaying error messages related to fetching or operations. */
   const [error, setError] = useState<string | null>(null);
+  /** State to control the visibility of the delete confirmation dialog. */
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  /** State to store the category object that is currently marked for deletion. */
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
+  /**
+   * Fetches categories from the `/api/admin/categories` endpoint.
+   * Updates loading, error, and categories states.
+   * Displays toast notifications for success or failure.
+   */
   const fetchCategories = async () => {
     setLoading(true);
     setError(null);
@@ -65,11 +85,22 @@ const AdminCategoriesPage: NextPage = () => {
     fetchCategories();
   }, []);
 
+  /**
+   * Handles the click event for the 'Delete' action on a category.
+   * Sets the category to be deleted and shows the confirmation dialog.
+   * @param {Category} category - The category object to be deleted.
+   */
   const handleDeleteClick = (category: Category) => {
     setCategoryToDelete(category);
     setShowDeleteDialog(true);
   };
 
+  /**
+   * Confirms and executes the deletion of the category stored in `categoryToDelete`.
+   * Sends a DELETE request to `/api/admin/categories/:id`.
+   * Displays toast notifications and refreshes the category list on success.
+   * Clears deletion state and hides the dialog afterwards.
+   */
   const confirmDelete = async () => {
     if (!categoryToDelete) return;
     try {

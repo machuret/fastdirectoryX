@@ -4,6 +4,13 @@ import { authOptions } from '../../auth/[...nextauth]';
 import prisma from '@/lib/prisma';
 import { Category } from '@prisma/client';
 
+/**
+ * @typedef {object} ResponseData
+ * @property {string} [message] - A success or informational message.
+ * @property {Category[]} [categories] - An array of category objects (for GET requests).
+ * @property {Category} [category] - A single category object (e.g., for POST requests).
+ * @property {string} [error] - An error message.
+ */
 type ResponseData = {
   message?: string;
   categories?: Category[];
@@ -11,6 +18,32 @@ type ResponseData = {
   error?: string;
 };
 
+/**
+ * API handler for managing category collections.
+ * Supports fetching all categories (GET) and creating new categories (POST).
+ * Requires ADMIN privileges for all operations.
+ *
+ * @param {NextApiRequest} req The Next.js API request object.
+ * @param {NextApiResponse<ResponseData>} res The Next.js API response object.
+ *
+ * @route GET /api/admin/categories
+ * @description Fetches all categories, ordered by name. Requires ADMIN role.
+ * @returns {Promise<void>} Responds with a list of categories or an error message.
+ * @successResponse 200 OK - { categories: Category[] } An object containing an array of category objects.
+ * @errorResponse 401 Unauthorized - If the user is not an ADMIN.
+ * @errorResponse 500 Internal Server Error - If an error occurs during fetching.
+ *
+ * @route POST /api/admin/categories
+ * @description Creates a new category. Requires ADMIN role.
+ * @bodyParam {string} name - The name of the category.
+ * @bodyParam {string} slug - The unique slug for the category URL.
+ * @bodyParam {string} [featureImageUrl] - Optional URL for the category's feature image.
+ * @returns {Promise<void>} Responds with the newly created category object and a success message, or an error message.
+ * @successResponse 201 Created - { message: string, category: Category } The newly created category object and a success message.
+ * @errorResponse 400 Bad Request - If required fields (name, slug) are missing, or if the slug is not unique, or other unique constraint violation.
+ * @errorResponse 401 Unauthorized - If the user is not an ADMIN.
+ * @errorResponse 500 Internal Server Error - If an error occurs during creation.
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>

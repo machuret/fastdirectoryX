@@ -5,24 +5,49 @@ import Link from 'next/link';
 import AdminLayout from '@/components/admin/AdminLayout'; // Preferred sidebar AdminLayout
 import { UserRole, UserStatus } from '@prisma/client'; // For type safety
 
+/**
+ * Interface representing the structure of a user object as fetched from the API.
+ */
 interface UserFromAPI {
+  /** The unique identifier of the user. */
   id: string;
+  /** The name of the user (can be null). */
   name: string | null;
+  /** The email address of the user. */
   email: string;
+  /** The role of the user (e.g., ADMIN, USER). */
   role: UserRole;
+  /** The status of the user (e.g., ACTIVE, PENDING). */
   status: UserStatus;
+  /** The creation date of the user account (ISO string). */
   createdAt: string; // Dates will be strings from JSON
+  /** The last update date of the user account (ISO string). */
   updatedAt: string;
+  /** The URL of the user's profile image (can be null). */
   image?: string | null;
+  /** The date the user's email was verified (ISO string, can be null). */
   emailVerified?: string | null; // Dates will be strings from JSON
 }
 
+/**
+ * Props for the {@link UserManagementPage} component.
+ */
 interface UserManagementProps {
+  /** Initial list of users fetched server-side. */
   usersInitial: UserFromAPI[];
+  /** Optional error message if fetching users failed server-side. */
   error?: string;
 }
 
 // Helper component to format date on client side to avoid hydration mismatch
+/**
+ * A client-side component to format and display a date string.
+ * This helps avoid hydration mismatches that can occur when formatting dates
+ * that differ between server-render and client-render.
+ * @param {object} props - The component's props.
+ * @param {string | Date} props.dateString - The date string (ISO format) or Date object to format.
+ * @returns {JSX.Element} The formatted date or a loading/fallback message.
+ */
 const ClientSideDate = ({ dateString }: { dateString: string | Date }) => {
   const [formattedDate, setFormattedDate] = useState('');
 
@@ -43,10 +68,22 @@ const ClientSideDate = ({ dateString }: { dateString: string | Date }) => {
   return <>{formattedDate || 'Loading date...'}</>; // Show loading or fallback
 };
 
+/**
+ * The main page component for managing users in the admin panel.
+ * Displays a list of users and allows for adding, editing, and deleting users.
+ * @param {UserManagementProps} props - The props for the component, including initial user data.
+ * @returns {JSX.Element} The rendered user management page.
+ */
 const UserManagementPage: NextPage<UserManagementProps> = ({ usersInitial, error }) => {
   const [users, setUsers] = useState<UserFromAPI[]>(usersInitial || []);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  /**
+   * Handles the deletion of a user.
+   * Prompts for confirmation, then sends a DELETE request to the API.
+   * Updates the local user list and feedback state based on the outcome.
+   * @param {string} userId - The ID of the user to delete.
+   */
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
@@ -149,6 +186,13 @@ const UserManagementPage: NextPage<UserManagementProps> = ({ usersInitial, error
   );
 };
 
+/**
+ * Server-side properties for the User Management page.
+ * Fetches the initial list of users and ensures the current user is an admin.
+ * Redirects to login if not authorized.
+ * @param {GetServerSidePropsContext} context - The Next.js context object for server-side props.
+ * @returns {Promise<GetServerSidePropsResult<UserManagementProps>>} The server-side props, including users or a redirect.
+ */
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
 

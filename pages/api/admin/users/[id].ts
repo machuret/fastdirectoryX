@@ -4,6 +4,49 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]'; // Adjusted path
 import { UserRole, UserStatus } from '@prisma/client';
 
+/**
+ * API handler for managing individual user resources.
+ * Supports fetching (GET), updating (PUT), and deleting (DELETE) a specific user by ID.
+ * Requires ADMIN privileges for all operations.
+ *
+ * @param {NextApiRequest} req The Next.js API request object.
+ * @param {NextApiResponse} res The Next.js API response object.
+ *
+ * @route GET /api/admin/users/{id}
+ * @description Fetches a specific user by their ID. Requires ADMIN role.
+ * @param {string} req.query.id - The ID of the user to fetch.
+ * @returns {Promise<void>} Responds with the user object or an error message.
+ * @successResponse 200 OK - {User} The user object (password excluded, user_id mapped to id).
+ * @errorResponse 400 Bad Request - If the user ID is not a valid integer.
+ * @errorResponse 403 Forbidden - If the session user is not an ADMIN.
+ * @errorResponse 404 Not Found - If the user with the specified ID is not found.
+ * @errorResponse 500 Internal Server Error - If an error occurs during fetching.
+ *
+ * @route PUT /api/admin/users/{id}
+ * @description Updates a specific user by their ID. Requires ADMIN role.
+ * @param {string} req.query.id - The ID of the user to update.
+ * @bodyParam {string} [name] - The new name of the user.
+ * @bodyParam {string} [email] - The new email address of the user (must be unique).
+ * @bodyParam {UserRole} [role] - The new role of the user.
+ * @bodyParam {UserStatus} [status] - The new status of the user.
+ * @returns {Promise<void>} Responds with the updated user object or an error message.
+ * @successResponse 200 OK - {User} The updated user object (password excluded, user_id mapped to id).
+ * @errorResponse 400 Bad Request - If no update fields are provided, ID is invalid, or admin tries to demote/suspend self.
+ * @errorResponse 403 Forbidden - If the session user is not an ADMIN.
+ * @errorResponse 404 Not Found - If the user with the specified ID is not found (Prisma P2025).
+ * @errorResponse 409 Conflict - If the new email is already in use (Prisma P2002).
+ * @errorResponse 500 Internal Server Error - If an error occurs during update.
+ *
+ * @route DELETE /api/admin/users/{id}
+ * @description Deletes a specific user by their ID. Requires ADMIN role.
+ * @param {string} req.query.id - The ID of the user to delete.
+ * @returns {Promise<void>} Responds with no content on success or an error message.
+ * @successResponse 204 No Content - Successfully deleted the user.
+ * @errorResponse 400 Bad Request - If the user ID is not a valid integer or admin tries to delete self.
+ * @errorResponse 403 Forbidden - If the session user is not an ADMIN.
+ * @errorResponse 404 Not Found - If the user with the specified ID is not found (Prisma P2025).
+ * @errorResponse 500 Internal Server Error - If an error occurs during deletion.
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse

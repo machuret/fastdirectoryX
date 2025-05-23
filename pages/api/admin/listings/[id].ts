@@ -26,28 +26,51 @@ import { serializeAdminListing, SerializedListingBusiness } from './index'; // I
  * @param {string} req.query.id - The ID of the listing to update (must be a number).
  * @bodyParam {string} [title] - New title for the listing.
  * @bodyParam {string} [description] - New description.
- * @bodyParam {string} [phone] - New phone number.
- * @bodyParam {string} [website] - New website URL.
- * @bodyParam {string} [address] - New full address.
+ * @bodyParam {string} [phoneNumber] - New phone number.
+ * @bodyParam {string} [websiteUrl] - New website URL.
+ * @bodyParam {string} [isFeatured] - New featured status.
  * @bodyParam {number | string | null} [latitude] - New latitude. Can be null to unset.
  * @bodyParam {number | string | null} [longitude] - New longitude. Can be null to unset.
- * @bodyParam {string} [category_name] - New category name.
- * @bodyParam {boolean} [isFeatured] - New featured status.
- * @bodyParam {boolean} [temporarily_closed] - New temporarily closed status.
- * @bodyParam {boolean} [permanently_closed] - New permanently closed status.
- * @bodyParam {string} [city] - New city.
- * @bodyParam {string} [state] - New state.
- * @bodyParam {string} [country_code] - New country code.
- * @bodyParam {string} [postal_code] - New postal code.
+ * @bodyParam {string} [businessId] - New business ID.
+ * @bodyParam {string} [priceRange] - New price range.
+ * @bodyParam {string} [address] - New full address.
  * @bodyParam {string} [neighborhood] - New neighborhood.
- * @bodyParam {string} [price_range] - New price range.
- * @bodyParam {string | null} [image_url] - New primary image URL. Can be null to unset.
- * @bodyParam {string | null} [facebook_url] - New Facebook URL. Can be null to unset.
- * @bodyParam {string | null} [instagram_url] - New Instagram URL. Can be null to unset.
- * @bodyParam {string | null} [linkedin_url] - New LinkedIn URL. Can be null to unset.
- * @bodyParam {string | null} [pinterest_url] - New Pinterest URL. Can be null to unset.
- * @bodyParam {string | null} [youtube_url] - New YouTube URL. Can be null to unset.
- * @bodyParam {string | null} [x_com_url] - New X.com (Twitter) URL. Can be null to unset.
+ * @bodyParam {string} [city] - New city.
+ * @bodyParam {string} [stateProvince] - New state or province.
+ * @bodyParam {string} [postalCode] - New postal code.
+ * @bodyParam {string} [countryCode] - New country code.
+ * @bodyParam {string} [googleMapsUrl] - New Google Maps URL.
+ * @bodyParam {string} [menuUrl] - New menu URL.
+ * @bodyParam {string} [reserveTableUrl] - New reserve table URL.
+ * @bodyParam {string} [ownerUserId] - New owner user ID.
+ * @bodyParam {string} [metaTitle] - New meta title.
+ * @bodyParam {string | null} [facebookUrl] - New Facebook URL. Can be null to unset.
+ * @bodyParam {string | null} [instagramUrl] - New Instagram URL. Can be null to unset.
+ * @bodyParam {string | null} [linkedinUrl] - New LinkedIn URL. Can be null to unset.
+ * @bodyParam {string | null} [pinterestUrl] - New Pinterest URL. Can be null to unset.
+ * @bodyParam {string | null} [youtubeUrl] - New YouTube URL. Can be null to unset.
+ * @bodyParam {string | null} [xComUrl] - New X.com (Twitter) URL. Can be null to unset.
+ * @bodyParam {string} [descriptionOptimized] - New description optimized.
+ * @bodyParam {string} [placeId] - New place ID.
+ * @bodyParam {boolean} [temporarilyClosed] - New temporarily closed status.
+ * @bodyParam {boolean} [permanentlyClosed] - New permanently closed status.
+ * @bodyParam {string} [operationalStatus] - New operational status.
+ * @bodyParam {string} [fid] - New fid.
+ * @bodyParam {string} [cid] - New cid.
+ * @bodyParam {number | string | null} [reviewsCount] - New reviews count. Can be null to unset.
+ * @bodyParam {string} [googleFoodUrl] - New Google Food URL.
+ * @bodyParam {string} [searchPageUrl] - New search page URL.
+ * @bodyParam {string} [searchString] - New search string.
+ * @bodyParam {string} [language] - New language.
+ * @bodyParam {number | string | null} [rank] - New rank. Can be null to unset.
+ * @bodyParam {string} [kgmid] - New kgmid.
+ * @bodyParam {string} [subTitle] - New sub title.
+ * @bodyParam {string} [locatedIn] - New located in.
+ * @bodyParam {string} [plusCode] - New plus code.
+ * @bodyParam {string} [popularTimesLiveText] - New popular times live text.
+ * @bodyParam {number | string | null} [popularTimesLivePercent] - New popular times live percent. Can be null to unset.
+ * @bodyParam {string} [faqOptimized] - New FAQ optimized.
+ * @bodyParam {boolean} [isAdvertisement] - New advertisement status.
  * @returns {Promise<void>} Responds with the updated and serialized listing object or an error message.
  * @successResponse 200 OK - {SerializedListingBusiness} The updated and serialized listing object.
  * @errorResponse 400 Bad Request - If the listing ID is missing or not a valid number.
@@ -103,73 +126,147 @@ export default async function handleListingItem(req: NextApiRequest, res: NextAp
     try {
       const {
         title,
+        slug, // Slug update logic might be complex; for now, we'll assume it's handled or not updated here
         description,
-        phone,
-        website,
-        address,
+        phoneNumber,
+        websiteUrl,
+        isFeatured,
         latitude,
         longitude,
-        category_name,
-        isFeatured,
-        temporarily_closed,
-        permanently_closed,
-        city,
-        state,
-        country_code,
-        postal_code,
+        businessId, // New (maps to business_id)
+        priceRange, // New (maps to price_range)
+        address,
         neighborhood,
-        price_range,
-        image_url,
-        // Social Media URLs
-        facebook_url,
-        instagram_url,
-        linkedin_url,
-        pinterest_url,
-        youtube_url,
-        x_com_url
+        city,
+        stateProvince, // New (maps to state_province)
+        postalCode, // New (maps to postal_code)
+        countryCode, // New (maps to country_code)
+        googleMapsUrl, // New (maps to google_maps_url)
+        menuUrl, // New (maps to menu_url)
+        reserveTableUrl, // New (maps to reserve_table_url)
+        ownerUserId, // New (maps to owner_user_id)
+        metaTitle, // New (maps to meta_title)
+        facebookUrl,
+        instagramUrl,
+        linkedinUrl,
+        pinterestUrl,
+        youtubeUrl,
+        xComUrl,
+        descriptionOptimized, // New
+        placeId, // New (maps to place_id)
+        temporarilyClosed, // Was temporarily_closed
+        permanentlyClosed, // Was permanently_closed
+        operationalStatus, // New (maps to operational_status)
+        fid, // New
+        cid, // New
+        reviewsCount, // New (maps to reviews_count)
+        googleFoodUrl, // New (maps to google_food_url)
+        searchPageUrl, // New (maps to search_page_url)
+        searchString, // New (maps to search_string)
+        language, // New
+        rank, // New
+        kgmid, // New
+        subTitle, // New (maps to sub_title)
+        locatedIn, // New (maps to located_in)
+        plusCode, // New (maps to plus_code)
+        popularTimesLiveText, // New (maps to popular_times_live_text)
+        popularTimesLivePercent, // New (maps to popular_times_live_percent)
+        faqOptimized, // New
+        isAdvertisement, // Re-added: Reverting schema change
       } = req.body;
 
       const updateData: Prisma.ListingBusinessUpdateInput = {};
 
-      // Add fields to updateData only if they are provided in the request body
+      // Map to Prisma field names (snake_case or camelCase as per Prisma schema)
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
-      if (phone !== undefined) updateData.phone = phone;
-      if (website !== undefined) updateData.website = website;
-      if (address !== undefined) updateData.address = address;
-      if (category_name !== undefined) updateData.category_name = category_name;
-      if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
-      if (temporarily_closed !== undefined) updateData.temporarily_closed = temporarily_closed;
-      if (permanently_closed !== undefined) updateData.permanently_closed = permanently_closed;
-      if (city !== undefined) updateData.city = city;
-      if (state !== undefined) updateData.state = state;
-      if (country_code !== undefined) updateData.country_code = country_code;
-      if (postal_code !== undefined) updateData.postal_code = postal_code;
-      if (neighborhood !== undefined) updateData.neighborhood = neighborhood;
-      if (price_range !== undefined) updateData.price_range = price_range;
-      if (image_url !== undefined) updateData.image_url = image_url;
-
-      // Social media fields - allow unsetting by passing null
-      if (facebook_url !== undefined) updateData.facebook_url = facebook_url;
-      if (instagram_url !== undefined) updateData.instagram_url = instagram_url;
-      if (linkedin_url !== undefined) updateData.linkedin_url = linkedin_url;
-      if (pinterest_url !== undefined) updateData.pinterest_url = pinterest_url;
-      if (youtube_url !== undefined) updateData.youtube_url = youtube_url;
-      if (x_com_url !== undefined) updateData.x_com_url = x_com_url;
-
+      if (phoneNumber !== undefined) updateData.phone = phoneNumber; // Prisma: phone
+      if (websiteUrl !== undefined) updateData.website = websiteUrl; // Prisma: website
+      if (isFeatured !== undefined) updateData.isFeatured = isFeatured; // Prisma: isFeatured (camelCase)
+      
       if (latitude !== undefined) {
-        const lat = parseFloat(latitude);
+        const lat = parseFloat(latitude as string); // Frontend sends number or string
         if (!isNaN(lat)) updateData.latitude = lat;
-        else if (latitude === null) updateData.latitude = null; // Allow unsetting
+        else if (latitude === null) updateData.latitude = null;
       }
       if (longitude !== undefined) {
-        const lon = parseFloat(longitude);
+        const lon = parseFloat(longitude as string);
         if (!isNaN(lon)) updateData.longitude = lon;
-        else if (longitude === null) updateData.longitude = null; // Allow unsetting
+        else if (longitude === null) updateData.longitude = null;
       }
 
-      // If title is being updated, consider regenerating the slug if your logic requires it
-      // For simplicity, slug regeneration on update is not included here but can be added.
+      if (businessId !== undefined) { // maps to business_id (Int?)
+        const bId = parseInt(businessId as string, 10);
+        if (!isNaN(bId)) updateData.business = { connect: { business_id: bId } }; // Prisma: business_id
+      }
+      if (priceRange !== undefined) updateData.price_range = priceRange; // Prisma: price_range
+      if (address !== undefined) updateData.address = address;
+      if (neighborhood !== undefined) updateData.neighborhood = neighborhood;
+      if (city !== undefined) updateData.city = city;
+      if (stateProvince !== undefined) updateData.state = stateProvince; // Prisma: state
+      if (postalCode !== undefined) updateData.postal_code = postalCode; // Prisma: postal_code
+      if (countryCode !== undefined) updateData.country_code = countryCode; // Prisma: country_code
+      if (googleMapsUrl !== undefined) updateData.url = googleMapsUrl; // Prisma: url (used for google_maps_url)
+      if (menuUrl !== undefined) updateData.menu_url = menuUrl; // Prisma: menu_url
+      if (reserveTableUrl !== undefined) updateData.reserve_table_url = reserveTableUrl; // Prisma: reserve_table_url
+      if (ownerUserId !== undefined) {
+        if (ownerUserId === null || ownerUserId === '') { // Check for empty string too if it can come from form
+          updateData.user = { disconnect: true };
+        } else {
+          const oId = parseInt(ownerUserId as string, 10);
+          if (!isNaN(oId)) updateData.user = { connect: { user_id: oId } }; // Prisma: user_id
+        }
+      }
+      if (metaTitle !== undefined) updateData.metaTitle = metaTitle; // Prisma: metaTitle (camelCase)
+      
+      // Social media fields (Prisma names are snake_case)
+      if (facebookUrl !== undefined) updateData.facebook_url = facebookUrl;
+      if (instagramUrl !== undefined) updateData.instagram_url = instagramUrl;
+      if (linkedinUrl !== undefined) updateData.linkedin_url = linkedinUrl;
+      if (pinterestUrl !== undefined) updateData.pinterest_url = pinterestUrl;
+      if (youtubeUrl !== undefined) updateData.youtube_url = youtubeUrl;
+      if (xComUrl !== undefined) updateData.x_com_url = xComUrl;
+
+      if (descriptionOptimized !== undefined) updateData.descriptionOptimized = descriptionOptimized;
+      if (placeId !== undefined) updateData.place_id = placeId; // Prisma: place_id
+      if (temporarilyClosed !== undefined) updateData.temporarily_closed = temporarilyClosed; // Prisma: temporarily_closed
+      if (permanentlyClosed !== undefined) updateData.permanently_closed = permanentlyClosed; // Prisma: permanently_closed
+      if (operationalStatus !== undefined) updateData.operational_status = operationalStatus; // Prisma: operational_status
+      if (fid !== undefined) updateData.fid = fid;
+      if (cid !== undefined) updateData.cid = cid;
+      
+      if (reviewsCount !== undefined) { // Prisma: reviews_count (Int?)
+        const rCount = parseInt(reviewsCount as string, 10);
+        if (!isNaN(rCount)) updateData.reviews_count = rCount;
+        else if (reviewsCount === null) updateData.reviews_count = null;
+      }
+      if (googleFoodUrl !== undefined) updateData.google_food_url = googleFoodUrl; // Prisma: google_food_url
+      if (searchPageUrl !== undefined) updateData.search_page_url = searchPageUrl; // Prisma: search_page_url
+      if (searchString !== undefined) updateData.search_string = searchString; // Prisma: search_string
+      if (language !== undefined) updateData.language = language;
+      
+      if (rank !== undefined) { // Prisma: rank (Int?)
+        const rnk = parseInt(rank as string, 10);
+        if (!isNaN(rnk)) updateData.rank = rnk;
+        else if (rank === null) updateData.rank = null;
+      }
+      if (kgmid !== undefined) updateData.kgmid = kgmid;
+      if (subTitle !== undefined) updateData.sub_title = subTitle; // Prisma: sub_title
+      if (locatedIn !== undefined) updateData.located_in = locatedIn; // Prisma: located_in
+      if (plusCode !== undefined) updateData.plus_code = plusCode; // Prisma: plus_code
+      if (popularTimesLiveText !== undefined) updateData.popular_times_live_text = popularTimesLiveText; // Prisma: popular_times_live_text
+      
+      if (popularTimesLivePercent !== undefined) { // Prisma: popular_times_live_percent (Int?)
+        const ptPercent = parseInt(popularTimesLivePercent as string, 10);
+        if (!isNaN(ptPercent)) updateData.popular_times_live_percent = ptPercent;
+        else if (popularTimesLivePercent === null) updateData.popular_times_live_percent = null;
+      }
+      if (faqOptimized !== undefined) updateData.faqOptimized = faqOptimized;
+      if (isAdvertisement !== undefined) updateData.is_advertisement = isAdvertisement; // Reverted to snake_case
+
+      // Remove old direct field assignments if they are now handled by the comprehensive mapping above
+      // e.g. updateData.phone, updateData.website, updateData.category_name, updateData.image_url etc.
+      // The old code had: if (phone !== undefined) updateData.phone = phone; -> now handled by phoneNumber -> phone_number
 
       const updatedListing = await prisma.listingBusiness.update({
         where: { listing_business_id: listingId },

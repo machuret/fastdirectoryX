@@ -11,7 +11,10 @@ import {
   MessagesSquare,
   Star,
   HelpCircle, // Added HelpCircle icon for Website FAQs
-  ListTree // Added ListTree icon for Menu Management
+  ListTree, // Added ListTree icon for Menu Management
+  Archive, // Added Archive icon for Prompt Vault
+  Activity, // Added Activity icon for AI Check
+  Sparkles, // Added Sparkles icon for AI Content
 } from 'lucide-react'; 
 
 interface AdminLayoutProps {
@@ -40,12 +43,15 @@ const toolNavItems = [
   { name: 'Featured Listings', path: '/admin/featured', icon: Star },
   { name: 'Website FAQs', path: '/admin/own-faq', icon: HelpCircle }, // Added Website FAQs
   { name: 'Menu Management', path: '/admin/menus', icon: ListTree }, // Added Menu Management
+  { name: 'Guides', path: '/admin/guides', icon: Sparkles }, // Renamed from AI Content
 ];
 
 const settingsNavItems = [
   { name: 'Homepage Settings', path: '/admin/settings/homepage', icon: Settings },
   { name: 'User Management', path: '/admin/users', icon: Users },
   { name: 'Contact Form', path: '/admin/settings/contactform', icon: FileText }, // Added Contact Form link
+  { name: 'Prompt Vault', path: '/admin/promptvault', icon: Archive },
+  { name: 'AI Check', path: '/admin/apicheck', icon: Activity },
 ];
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, pageTitle, pageIcon, pageDescription, actionButtons, headerMenuItems, footerMenuItems }) => {

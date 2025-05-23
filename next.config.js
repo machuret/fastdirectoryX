@@ -2,15 +2,23 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['lh3.googleusercontent.com'], // Added Google's domain
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      // Add other domains here if needed, e.g., your own S3 bucket
+    ],
   },
   async headers() {
     const cspHeader = `
       default-src 'self';
       script-src 'self' 'unsafe-eval' 'unsafe-inline';
-      style-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       img-src 'self' data: https: *.googleusercontent.com;
-      font-src 'self';
+      font-src 'self' https://fonts.gstatic.com;
       connect-src 'self';
       frame-ancestors 'none';
       form-action 'self';

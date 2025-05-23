@@ -48,11 +48,34 @@ export default async function handler(
   switch (req.method) {
     case 'GET':
       try {
-        const users = await prisma.user.findMany({
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+        const search = req.query.search as string | undefined;
+        const role = req.query.role as UserRole | undefined;
+        const status = req.query.status as UserStatus | undefined;
+
+        const whereClause: any = {};
+        if (search) {
+          whereClause.OR = [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ];
+        }
+        if (role && Object.values(UserRole).includes(role)) {
+          whereClause.role = role;
+        }
+        if (status && Object.values(UserStatus).includes(status)) {
+          whereClause.status = status;
+        }
+
+        const usersFromDB = await prisma.user.findMany({
+          where: whereClause,
+          skip: skip,
+          take: limit,
           orderBy: {
             createdAt: 'desc',
           },
-          // Exclude password from the result
           select: {
             user_id: true,
             name: true,
@@ -65,7 +88,30 @@ export default async function handler(
             emailVerified: true,
           }
         });
-        return res.status(200).json(users);
+
+        const totalUsers = await prisma.user.count({
+          where: whereClause,
+        });
+
+        // Map users to match UserForAdminDisplay structure
+        const users = usersFromDB.map(user => ({
+          id: user.user_id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          image: user.image,
+          emailVerified: user.emailVerified ? user.emailVerified.toISOString() : null,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        }));
+
+        return res.status(200).json({
+          users, // Use the mapped users
+          totalPages: Math.ceil(totalUsers / limit),
+          currentPage: page,
+          totalUsers,
+        });
       } catch (error) {
         console.error('Error fetching users:', error);
         return res.status(500).json({ message: 'Internal Server Error' });

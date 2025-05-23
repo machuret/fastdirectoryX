@@ -1,321 +1,426 @@
-import { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { GetServerSideProps, GetServerSidePropsContext } from 'next'; 
 import { useRouter } from 'next/router';
-import Link from 'next/link';
-import Head from 'next/head';
+import { useSession, getSession } from 'next-auth/react';
+import prisma from '@/lib/prisma';
+import { AdminSerializedListing, serializeListing, FAQItem } from '../../../../lib/serializeData';
+import type { 
+  ListingBusiness, 
+  ListingImageUrl as PrismaListingImageUrl, 
+  ListingCategory as PrismaListingCategory, 
+  ListingAttribute as PrismaListingAttributeModel, 
+  OpeningHours as PrismaOpeningHours,
+  Prisma
+} from '@prisma/client';
+
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import {
-  Store, ArrowLeft, Save, Loader2, AlertTriangle, ImagePlus, Trash2, PlusCircle, Wand2, CheckCircle2
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { ChevronLeft, Save, Trash2, ImagePlus, PlusCircle, XCircle, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Label } from '@/components/ui/label';
 
-// Define types for the serialized data expected from the API
-/**
- * Represents a single FAQ item with a question and an answer.
- */
-interface FAQItem {
-  /** The question part of the FAQ. */
-  question: string;
-  /** The answer part of the FAQ. */
-  answer: string;
+interface EditListingPageProps {
+  listingInitial: AdminSerializedListing | null; 
+  error?: string; 
+  pageTitle: string;
+  allCategories?: { id: string; name: string }[]; 
+  allAmenities?: { amenity_id: string; name: string }[]; 
 }
 
-/**
- * Represents a serialized review as returned by the admin API for a listing.
- * Note: Review ratings and dates are represented as strings due to potential serialization of Decimal/DateTime.
- */
-interface AdminSerializedReview {
-  /** Unique identifier for the review. */
-  review_id: string;
-  /** Name of the reviewer. */
-  reviewer_name?: string | null;
-  /** Text content of the review. */
-  review_text?: string | null;
-  /** Rating given in the review (serialized as string). */
-  rating?: string | null; 
-  /** Date when the review was published (serialized as string). */
-  published_at_date?: string | null; 
+interface SelectedAmenityData {
+  amenity_id: string;
+  name: string;
+  value?: string | null; 
+  icon_svg?: string | null; 
 }
 
-/**
- * Represents a serialized image URL associated with a listing, as returned by the admin API.
- */
-interface SerializedAdminListingImageUrl {
-  /** Unique identifier for the image URL record. */
-  image_url_id: string;
-  /** The actual URL of the image. */
-  url: string;
-  /** Optional description for the image. */
-  description?: string | null;
-  /** Flag indicating if this is the primary cover image for the listing. */
-  is_cover_image: boolean;
+interface SelectedSpecialHourData {
+  id: number; 
+  date: string; 
+  open_time: string | null;
+  close_time: string | null;
+  description: string | null;
 }
 
-/**
- * Represents the detailed structure of a business listing as fetched from the admin API.
- * Contains various fields including basic info, contact, location, images, reviews, and FAQs.
- * Timestamps and numerical values like latitude/longitude might be serialized as strings.
- */
-interface AdminSerializedListing {
-  /** Unique identifier for the business listing. */
-  business_id: string;
-  /** The title or name of the business. */
+interface PreparedListingForSerialization {
+  listing_business_id: number;
   title: string;
-  /** Price range (e.g., "$", "$$"). */
-  price_range?: string | null;
-  /** Primary category name. */
-  category_name?: string | null;
-  /** Full address string. */
-  address?: string | null;
-  /** Neighborhood. */
-  neighborhood?: string | null;
-  /** Street address. */
-  street?: string | null;
-  /** City. */
-  city?: string | null;
-  /** Postal or ZIP code. */
-  postal_code?: string | null;
-  /** State or province. */
-  state?: string | null;
-  /** Two-letter country code. */
-  country_code?: string | null;
-  /** Primary phone number. */
-  phone?: string | null;
-  /** Detailed description of the business. */
-  description?: string | null;
-  /** Official website URL. */
-  website?: string | null;
-  /** Geographical latitude (serialized as string). */
-  latitude?: string | null; 
-  /** Geographical longitude (serialized as string). */
-  longitude?: string | null; 
-  /** Google Places ID or similar identifier. */
-  place_id?: string | null;
-  /** URL of the main image for the listing. */
-  image_url?: string | null; 
-  /** Array of gallery images associated with the listing. */
-  imageUrls?: SerializedAdminListingImageUrl[]; 
-  /** Timestamp of the last update (serialized as string). */
+  slug: string;
+  price_range: string | null;
+  category_name: string | null;
+  address: string | null;
+  neighborhood: string | null;
+  street: string | null;
+  city: string | null;
+  postal_code: string | null;
+  state: string | null;
+  country_code: string | null;
+  phone: string | null;
+  website: string | null;
+  description: string | null;
+  isFeatured: boolean;
+  business_id: number | null;
+  user_id: number | null;
+  place_id: string | null;
+  imageUrls: Array<Pick<PrismaListingImageUrl, 'image_url_id' | 'url' | 'description'>>;
+  categories: Array<Pick<PrismaCategory, 'category_id' | 'category_name'>>;
+  amenities: SelectedAmenityData[];
+  openingHours: Array<Pick<PrismaOpeningHours, 'id' | 'day_of_week' | 'open_time' | 'close_time'>>;
+  specialHours: SelectedSpecialHourData[];
+  faq: FAQItem[] | null;
+  latitude: number | null;
+  longitude: number | null;
+  createdAt: string; 
   updatedAt: string; 
-  /** Timestamp of when the listing was last scraped (serialized as string). */
-  scraped_at?: string | null; 
-  /** Array of reviews for the listing. */
-  reviews?: AdminSerializedReview[];
-  /** Array of FAQ items for the listing. */
-  faq?: FAQItem[] | null; 
-  /** URL to the business's Facebook page. */
-  facebook_url?: string | null;
-  /** URL to the business's Instagram profile. */
-  instagram_url?: string | null;
-  /** URL to the business's LinkedIn page. */
-  linkedin_url?: string | null;
-  /** URL to the business's Pinterest page. */
-  pinterest_url?: string | null;
-  /** URL to the business's YouTube channel. */
-  youtube_url?: string | null;
-  /** URL to the business's X (formerly Twitter) profile. */
-  x_com_url?: string | null;
 }
 
-/**
- * Defines the structure for the form data used to edit an existing business listing.
- * Mirrors many fields from `AdminSerializedListing` but is adapted for form input state.
- */
-interface ListingFormData {
+interface PrismaRawListingData extends Omit<ListingBusiness, 
+  'listing_business_id' | 
+  'business_id' | 
+  'user_id' | 
+  'latitude' | 
+  'longitude' | 
+  'faq' | 
+  'createdAt' | 
+  'updatedAt' | 
+  'additional_details' | 
+  'imageUrls' | 
+  'categories' | 
+  'businessAttributes' | 
+  'openingHours' | 
+  'special_hours' 
+> { 
+  listing_business_id: number;
   title: string;
-  price_range?: string;
-  category_name?: string;
-  address?: string;
-  neighborhood?: string;
-  street?: string;
-  city?: string;
-  postal_code?: string;
-  state?: string;
-  country_code?: string;
-  phone?: string;
-  description?: string;
-  website?: string;
-  latitude?: string;
-  longitude?: string;
-  place_id?: string;
-  image_url?: string; 
-  /** Array of gallery images being edited or added in the form. */
-  galleryImages: GalleryImageFormItem[]; 
-  /** Array of FAQ items being edited or added in the form. */
-  faq?: FAQItem[]; 
-  facebook_url?: string;
-  instagram_url?: string;
-  linkedin_url?: string;
-  pinterest_url?: string;
-  youtube_url?: string;
-  x_com_url?: string;
+  description: string | null;
+  slug: string;
+  phone_number: string | null;
+  email_address: string | null;
+  website_url: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
+  city: string | null;
+  state_province: string | null;
+  postal_code: string | null;
+  country_code: string | null;
+  latitude: Prisma.Decimal | null;
+  longitude: Prisma.Decimal | null;
+  is_featured: boolean;
+  is_published: boolean;
+  owner_user_id: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_keywords: string | null;
+  social_media_links: Prisma.JsonValue | null; 
+  additional_details: Prisma.JsonValue | null;
+
+  imageUrls: Array<{ 
+    image_url_id: number;
+    url: string;
+    description: string | null;
+  }>;
+  categories: Array<{ 
+    listing_business_id: number;
+    listing_category_id: number;
+    category: PrismaCategory; 
+  }>;
+  businessAttributes: Array<{ 
+    value: string | null; 
+    listingAttribute: PrismaListingAttributeModel; 
+  }>;
+  openingHours: Array<PrismaOpeningHours>; 
+  faq: Prisma.JsonValue; 
+
+  created_at: Date;
+  updated_at: Date;
+  published_at: Date | null;
 }
 
-/**
- * Represents a single gallery image item within the listing edit form.
- */
-interface GalleryImageFormItem {
-  /** Optional ID of an existing image (if editing). */
-  id?: string; 
-  /** URL of the gallery image. */
-  url: string;
-  /** Description for the gallery image. */
-  description: string;
-}
+// Type aliases for Prisma models to improve readability
+type PrismaCategory = PrismaListingCategory; 
+type PrismaListingAttribute = PrismaListingAttributeModel; 
 
-/**
- * Page component for editing an existing business listing.
- * Fetches listing data by ID, populates a form, allows modification of various fields
- * including gallery images and FAQs, and handles submission to update the listing.
- * Also includes functionality to generate FAQs using an API endpoint.
- */
-const EditListingPage = () => {
+const EditListingPage: React.FC<EditListingPageProps> = ({ 
+  listingInitial, 
+  error, 
+  pageTitle, 
+  allCategories,
+  allAmenities
+}) => {
   const router = useRouter();
-  const { id } = router.query; 
+  const { data: session, status } = useSession();
+  const [isLoading, setIsLoading] = useState(false);
 
-  /** State for the originally fetched listing data. */
-  const [listing, setListing] = useState<AdminSerializedListing | null>(null);
-  /** State for the form data being edited by the user. */
-  const [formData, setFormData] = useState<ListingFormData>({
-    title: '',
-    price_range: '', category_name: '', address: '', neighborhood: '', street: '',
-    city: '', postal_code: '', state: '', country_code: '', phone: '',
-    description: '', website: '', latitude: '', longitude: '', place_id: '',
-    image_url: '', 
-    galleryImages: [], 
-    faq: [], 
-    facebook_url: '',
-    instagram_url: '',
-    linkedin_url: '',
-    pinterest_url: '',
-    youtube_url: '',
-    x_com_url: '',
-  });
-  /** State indicating if the listing data is currently being fetched. */
-  const [isLoading, setIsLoading] = useState(true);
-  /** State indicating if the form is currently being submitted. */
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  /** State for storing and displaying error messages related to data fetching or submission. */
-  const [error, setError] = useState<string | null>(null);
-  /** State for displaying a success message after a successful form submission. */
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  // Form field states
+  const [title, setTitle] = useState(listingInitial?.title || '');
+  const [slug, setSlug] = useState(listingInitial?.slug || '');
+  const [description, setDescription] = useState(listingInitial?.description || '');
+  const [phoneNumber, setPhoneNumber] = useState(listingInitial?.phone_number || '');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState(listingInitial?.website_url || '');
 
-  // State for FAQ Generation (will be handled later)
-  /** State indicating if FAQs are currently being generated via API. */
-  const [isGeneratingFaq, setIsGeneratingFaq] = useState(false);
-  /** State for displaying messages related to FAQ generation (success or error). */
-  const [faqGenerationMessage, setFaqGenerationMessage] = useState<string | null>(null);
-  /** State holding the current list of FAQs, potentially updated by generation. */
-  const [currentFaq, setCurrentFaq] = useState<FAQItem[]>([]);
+  // Existing booleans and numbers
+  const [isFeatured, setIsFeatured] = useState(listingInitial?.is_featured || false);
+  const [isPublished, setIsPublished] = useState(true);
+  const [isAdvertisement, setIsAdvertisement] = useState(listingInitial?.is_advertisement || false);
+  const [latitude, setLatitude] = useState<number | string>(listingInitial?.latitude ?? '');
+  const [longitude, setLongitude] = useState<number | string>(listingInitial?.longitude ?? '');
 
-  /**
-   * Effect hook to fetch listing data when the component mounts or the `id` parameter changes.
-   * Fetches from `/api/admin/listings/:id` and populates `listing` and `formData` states.
-   * Handles loading and error states during the fetch operation.
-   */
+  // ALL NEW FIELDS STATE
+  const [businessId, setBusinessId] = useState<number | string>(listingInitial?.business_id ?? '');
+  const [priceRange, setPriceRange] = useState(listingInitial?.price_range || '');
+  const [address, setAddress] = useState(listingInitial?.address || '');
+  const [neighborhood, setNeighborhood] = useState(listingInitial?.neighborhood || '');
+  const [city, setCity] = useState(listingInitial?.city || ''); // Kept, can be part of address or separate
+  const [stateProvince, setStateProvince] = useState(listingInitial?.state_province || ''); // Kept
+  const [postalCode, setPostalCode] = useState(listingInitial?.postal_code || ''); // Kept
+  const [countryCode, setCountryCode] = useState(listingInitial?.country_code || ''); // Kept
+  const [googleMapsUrl, setGoogleMapsUrl] = useState(listingInitial?.google_maps_url || '');
+  const [menuUrl, setMenuUrl] = useState(listingInitial?.menu_url || '');
+  const [reserveTableUrl, setReserveTableUrl] = useState(listingInitial?.reserve_table_url || '');
+  const [ownerUserId, setOwnerUserId] = useState(listingInitial?.owner_user_id || ''); // Display only or selector?
+  const [metaTitle, setMetaTitle] = useState(listingInitial?.meta_title || '');
+  const [metaDescription, setMetaDescription] = useState('');
+  const [metaKeywords, setMetaKeywords] = useState('');
+  const [facebookUrl, setFacebookUrl] = useState(listingInitial?.facebook_url || '');
+  const [instagramUrl, setInstagramUrl] = useState(listingInitial?.instagram_url || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(listingInitial?.linkedin_url || '');
+  const [pinterestUrl, setPinterestUrl] = useState(listingInitial?.pinterest_url || '');
+  const [youtubeUrl, setYoutubeUrl] = useState(listingInitial?.youtube_url || '');
+  const [xComUrl, setXComUrl] = useState(listingInitial?.x_com_url || '');
+  const [additionalDetails, setAdditionalDetails] = useState('');
+  const [descriptionOptimized, setDescriptionOptimized] = useState(listingInitial?.descriptionOptimized || false);
+  const [placeId, setPlaceId] = useState(listingInitial?.place_id || '');
+  const [temporarilyClosed, setTemporarilyClosed] = useState(listingInitial?.temporarily_closed || false);
+  const [permanentlyClosed, setPermanentlyClosed] = useState(listingInitial?.permanently_closed || false);
+  const [operationalStatus, setOperationalStatus] = useState(listingInitial?.operational_status || '');
+  const [fid, setFid] = useState(listingInitial?.fid || '');
+  const [cid, setCid] = useState(listingInitial?.cid || '');
+  const [reviewsCount, setReviewsCount] = useState<number | string>(listingInitial?.reviews_count ?? '');
+  const [googleFoodUrl, setGoogleFoodUrl] = useState(listingInitial?.google_food_url || '');
+  const [searchPageUrl, setSearchPageUrl] = useState(listingInitial?.search_page_url || '');
+  const [searchString, setSearchString] = useState(listingInitial?.search_string || '');
+  const [language, setLanguage] = useState(listingInitial?.language || '');
+  const [rank, setRank] = useState<number | string>(listingInitial?.rank ?? '');
+  const [primaryImageUrlExternal, setPrimaryImageUrlExternal] = useState('');
+  const [kgmid, setKgmid] = useState(listingInitial?.kgmid || '');
+  const [subTitle, setSubTitle] = useState(listingInitial?.sub_title || '');
+  const [locatedIn, setLocatedIn] = useState(listingInitial?.located_in || '');
+  const [plusCode, setPlusCode] = useState(listingInitial?.plus_code || '');
+  const [popularTimesLiveText, setPopularTimesLiveText] = useState(listingInitial?.popular_times_live_text || '');
+  const [popularTimesLivePercent, setPopularTimesLivePercent] = useState<number | string>(listingInitial?.popular_times_live_percent ?? '');
+  const [faqOptimized, setFaqOptimized] = useState(listingInitial?.faqOptimized || false);
+
+  // Add missing state variables
+  const [imagesCount, setImagesCount] = useState<number | string>(listingInitial?.images?.length || 0);
+  const [scrapedAt, setScrapedAt] = useState(''); // Was missing, initialize with default
+  const [url, setUrl] = useState(''); // Was missing (for Original Source URL), initialize with default
+
+  // State for FAQ items
+  const [faqItems, setFaqItems] = useState<FAQItem[]>(listingInitial?.faq || []);
+
   useEffect(() => {
-    if (id && typeof id === 'string') { 
-      setIsLoading(true);
-      setError(null);
-      setSubmitSuccess(null);
-      fetch(`/api/admin/listings/${id}`)
-        .then(res => {
-          if (!res.ok) {
-            return res.json().then(errData => { 
-              throw new Error(errData.message || 'Failed to fetch listing details'); 
-            });
-          }
-          return res.json();
-        })
-        .then((data: AdminSerializedListing) => {
-          setListing(data); 
-          setFormData({
-            title: data.title || '',
-            price_range: data.price_range || '',
-            category_name: data.category_name || '',
-            address: data.address || '',
-            neighborhood: data.neighborhood || '',
-            street: data.street || '',
-            city: data.city || '',
-            postal_code: data.postal_code || '',
-            state: data.state || '',
-            country_code: data.country_code || '',
-            phone: data.phone || '',
-            description: data.description || '',
-            website: data.website || '',
-            latitude: data.latitude?.toString() || '', 
-            longitude: data.longitude?.toString() || '', 
-            place_id: data.place_id || '',
-            image_url: data.image_url || '', 
-            galleryImages: data.imageUrls?.map(img => ({
-              id: img.image_url_id,
-              url: img.url,
-              description: img.description || '',
-            })) || [],
-            faq: data.faq || [], 
-            facebook_url: data.facebook_url || '',
-            instagram_url: data.instagram_url || '',
-            linkedin_url: data.linkedin_url || '',
-            pinterest_url: data.pinterest_url || '',
-            youtube_url: data.youtube_url || '',
-            x_com_url: data.x_com_url || '',
-          });
-          setCurrentFaq(data.faq || []); 
-          setIsLoading(false);
-        })
-        .catch(err => {
-          if (err instanceof Error) {
-            setError(err.message);
-          } else {
-            setError('An unknown error occurred while fetching listing details.');
-          }
-          setIsLoading(false);
-          console.error(err);
-        });
+    if (error) {
+      toast.error(error);
     }
-  }, [id]);
+  }, [error]);
 
-  /**
-   * Handles changes to input fields within the form.
-   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event.
-   */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setError(null); // Clear error on change
-    setSubmitSuccess(null); // Clear success message on change
-  };
+  if (status === 'loading') {
+    return <AdminLayout pageTitle="Loading Edit Page..."><p>Loading session...</p></AdminLayout>;
+  }
 
-  /**
-   * Handles the submission of the edited listing form.
-   * Performs client-side validation (title, numeric latitude/longitude).
-   * Sends a PUT request to `/api/admin/listings/:id` with the form data.
-   * On success, displays a success message and refetches listing data.
-   * On failure, displays an error message.
-   * @param {FormEvent} e - The form submission event.
-   */
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    setSubmitSuccess(null);
+  if (!session || session.user.role !== 'ADMIN') {
+    return <AdminLayout pageTitle="Access Denied"><p>Access Denied. You must be an admin to view this page.</p></AdminLayout>;
+  }
 
-    // Basic validation (can be expanded)
-    if (!formData.title) {
-      setError('Title is required.');
-      setIsSubmitting(false);
-      return;
-    }
+  if (!listingInitial && !error) {
+    // This case might occur if getServerSideProps returns null for listingInitial without an error
+    // (e.g. listing not found but handled gracefully by returning null)
+    return (
+      <AdminLayout pageTitle="Listing Not Found">
+        <div className="container mx-auto py-10">
+          <Card>
+            <CardHeader>
+              <CardTitle>Listing Not Found</CardTitle>
+              <CardDescription>
+                The listing you are trying to edit could not be found.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push('/admin/listings')}>
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back to Listings
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // If there was an error prop from getServerSideProps, but listingInitial might still be there (or not)
+  // The useEffect will show a toast for the error. We can decide how to render the page.
+  // For now, if there's an error and no listing, show a generic error message.
+  // If there's an error but we have some initial data, we might still try to render the form.
+  if (error && !listingInitial) {
+    return (
+      <AdminLayout pageTitle="Error">
+        <div className="container mx-auto py-10">
+          <Card>
+            <CardHeader>
+              <CardTitle>Error Loading Listing</CardTitle>
+              <CardDescription>
+                {error}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => router.push('/admin/listings')}>
+                <ChevronLeft className="mr-2 h-4 w-4" /> Back to Listings
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    toast.info('Attempting to save listing...');
+    // Implement submission logic here
+    console.log('Form submitted with data:', {
+      title,
+      slug,
+      description,
+      phoneNumber,
+      emailAddress,
+      websiteUrl,
+      isFeatured,
+      isPublished,
+      latitude,
+      longitude,
+      // Add all new state variables here
+      business_id: businessId ? parseInt(businessId.toString(), 10) : null,
+      price_range: priceRange,
+      address,
+      neighborhood,
+      city,
+      state_province: stateProvince,
+      postal_code: postalCode,
+      country_code: countryCode,
+      google_maps_url: googleMapsUrl,
+      menu_url: menuUrl,
+      reserve_table_url: reserveTableUrl,
+      owner_user_id: ownerUserId,
+      meta_title: metaTitle,
+      meta_description: metaDescription,
+      meta_keywords: metaKeywords,
+      facebook_url: facebookUrl,
+      instagram_url: instagramUrl,
+      linkedin_url: linkedinUrl,
+      pinterest_url: pinterestUrl,
+      youtube_url: youtubeUrl,
+      x_com_url: xComUrl,
+      additional_details: additionalDetails ? JSON.parse(additionalDetails) : null,
+      descriptionOptimized,
+      place_id: placeId,
+      temporarily_closed: temporarilyClosed,
+      permanently_closed: permanentlyClosed,
+      operational_status: operationalStatus,
+      fid,
+      cid,
+      reviews_count: reviewsCount ? parseInt(reviewsCount.toString(), 10) : null,
+      google_food_url: googleFoodUrl,
+      search_page_url: searchPageUrl,
+      search_string: searchString,
+      language,
+      rank: rank ? parseInt(rank.toString(), 10) : null,
+      is_advertisement: isAdvertisement,
+      primary_image_url_external: primaryImageUrlExternal,
+      kgmid,
+      sub_title: subTitle,
+      located_in: locatedIn,
+      plus_code: plusCode,
+      popular_times_live_text: popularTimesLiveText,
+      popular_times_live_percent: popularTimesLivePercent ? parseInt(popularTimesLivePercent.toString(), 10) : null,
+      faqOptimized,
+    });
 
     try {
-      const response = await fetch(`/api/admin/listings/${id}`, {
+      if (!listingInitial?.listing_business_id) {
+        toast.error('Error: Listing ID is missing. Cannot update.');
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(`/api/admin/listings/${listingInitial.listing_business_id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          slug,
+          description,
+          phoneNumber: phoneNumber, // Corrected to camelCase
+          emailAddress: emailAddress, // Corrected to camelCase
+          websiteUrl: websiteUrl, // Corrected to camelCase
+          isFeatured: isFeatured,
+          isPublished: isPublished,
+          latitude: latitude !== '' ? parseFloat(latitude.toString()) : null,
+          longitude: longitude !== '' ? parseFloat(longitude.toString()) : null,
+          // API expects Prisma field names (mostly camelCase)
+          businessId: businessId !== '' ? parseInt(businessId.toString(), 10) : null,
+          priceRange: priceRange || null,
+          address: address || null,
+          neighborhood: neighborhood || null,
+          city: city || null,
+          stateProvince: stateProvince || null,
+          postalCode: postalCode || null,
+          countryCode: countryCode || null,
+          googleMapsUrl: googleMapsUrl || null,
+          menuUrl: menuUrl || null,
+          reserveTableUrl: reserveTableUrl || null,
+          ownerUserId: ownerUserId || null,
+          metaTitle: metaTitle || null,
+          metaDescription: metaDescription || null,
+          metaKeywords: metaKeywords || null,
+          facebookUrl: facebookUrl || null,
+          instagramUrl: instagramUrl || null,
+          linkedinUrl: linkedinUrl || null,
+          pinterestUrl: pinterestUrl || null,
+          youtubeUrl: youtubeUrl || null,
+          xComUrl: xComUrl || null,
+          additionalDetails: additionalDetails ? JSON.parse(additionalDetails) : null,
+          descriptionOptimized: descriptionOptimized,
+          placeId: placeId || null,
+          temporarilyClosed: temporarilyClosed,
+          permanentlyClosed: permanentlyClosed,
+          operationalStatus: operationalStatus || null,
+          fid: fid || null,
+          cid: cid || null,
+          reviewsCount: reviewsCount !== '' ? parseInt(reviewsCount.toString(), 10) : null,
+          googleFoodUrl: googleFoodUrl || null,
+          searchPageUrl: searchPageUrl || null,
+          searchString: searchString || null,
+          language: language || null,
+          rank: rank !== '' ? parseInt(rank.toString(), 10) : null,
+          isAdvertisement: isAdvertisement,
+          primaryImageUrlExternal: primaryImageUrlExternal || null,
+          kgmid: kgmid || null,
+          subTitle: subTitle || null,
+          locatedIn: locatedIn || null,
+          plusCode: plusCode || null,
+          popularTimesLiveText: popularTimesLiveText || null,
+          popularTimesLivePercent: popularTimesLivePercent !== '' ? parseInt(popularTimesLivePercent.toString(), 10) : null,
+          faqOptimized: faqOptimized,
+        }),
       });
 
       if (!response.ok) {
@@ -323,532 +428,553 @@ const EditListingPage = () => {
         throw new Error(errorData.message || 'Failed to update listing');
       }
 
-      const updatedListing = await response.json();
-      setListing(updatedListing.listing); // Assuming API returns { listing: ... }
-      setFormData(prev => ({ // Re-populate form with potentially transformed/validated data from API
-        ...prev, // Keep galleryImages and faq as they are managed separately for now
-        title: updatedListing.listing.title || '',
-        price_range: updatedListing.listing.price_range || '',
-        category_name: updatedListing.listing.category_name || '',
-        address: updatedListing.listing.address || '',
-        neighborhood: updatedListing.listing.neighborhood || '',
-        street: updatedListing.listing.street || '',
-        city: updatedListing.listing.city || '',
-        postal_code: updatedListing.listing.postal_code || '',
-        state: updatedListing.listing.state || '',
-        country_code: updatedListing.listing.country_code || '',
-        phone: updatedListing.listing.phone || '',
-        description: updatedListing.listing.description || '',
-        website: updatedListing.listing.website || '',
-        latitude: updatedListing.listing.latitude?.toString() || '',
-        longitude: updatedListing.listing.longitude?.toString() || '',
-        place_id: updatedListing.listing.place_id || '',
-        image_url: updatedListing.listing.image_url || '',
-        facebook_url: updatedListing.listing.facebook_url || '',
-        instagram_url: updatedListing.listing.instagram_url || '',
-        linkedin_url: updatedListing.listing.linkedin_url || '',
-        pinterest_url: updatedListing.listing.pinterest_url || '',
-        youtube_url: updatedListing.listing.youtube_url || '',
-        x_com_url: updatedListing.listing.x_com_url || '',
-      }));
-      setSubmitSuccess('Listing updated successfully!');
-      // router.push('/admin/listings'); // Optionally redirect
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('An unknown error occurred.');
-      }
+      toast.success('Listing updated successfully!');
+      router.push('/admin/listings'); // Redirect to listings page on success
+
+    } catch (error) {
+      console.error('Failed to update listing:', error);
+      toast.error((error as Error).message || 'An unknown error occurred.');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
-
-  // --- Gallery Image Handlers (to be refactored with Shadcn UI later) --- 
-  /**
-   * Handles changes to input fields within a specific gallery image item.
-   * @param {number} index - The index of the gallery image item in the `formData.galleryImages` array.
-   * @param {keyof Omit<GalleryImageFormItem, 'id'>} field - The field being updated (e.g., 'url', 'description').
-   * @param {string} value - The new value for the field.
-   */
-  const handleGalleryImageChange = (index: number, field: keyof Omit<GalleryImageFormItem, 'id'>, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      galleryImages: prev.galleryImages.map((img, i) => 
-        i === index ? { ...img, [field]: value } : img
-      ),
-    }));
-  };
-
-  /**
-   * Adds a new, empty gallery image field to the form.
-   */
-  const addGalleryImageField = () => {
-    setFormData(prev => ({
-      ...prev,
-      galleryImages: [...prev.galleryImages, { url: '', description: '' }],
-    }));
-  };
-
-  /**
-   * Removes a gallery image field from the form at the specified index.
-   * @param {number} index - The index of the gallery image item to remove.
-   */
-  const removeGalleryImageField = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      galleryImages: prev.galleryImages.filter((_, i) => i !== index),
-    }));
-  };
-
-  // --- FAQ Handlers (to be refactored with Shadcn UI later) ---
-  /**
-   * Handles changes to input fields (question or answer) within a specific FAQ item.
-   * @param {number} index - The index of the FAQ item in the `formData.faq` array.
-   * @param {keyof FAQItem} field - The field being updated (e.g., 'question', 'answer').
-   * @param {string} value - The new value for the field.
-   */
-  const handleFaqChange = (index: number, field: keyof FAQItem, value: string) => {
-    const updatedFaq = [...currentFaq];
-    updatedFaq[index] = { ...updatedFaq[index], [field]: value };
-    setCurrentFaq(updatedFaq);
-    setFormData(prev => ({ ...prev, faq: updatedFaq }));
-  };
-
-  /**
-   * Adds a new, empty FAQ field (question and answer) to the form.
-   */
-  const addFaqItem = () => {
-    const newFaq = [...currentFaq, { question: '', answer: '' }];
-    setCurrentFaq(newFaq);
-    setFormData(prev => ({ ...prev, faq: newFaq }));
-  };
-
-  /**
-   * Removes an FAQ field from the form at the specified index.
-   * @param {number} index - The index of the FAQ item to remove.
-   */
-  const removeFaqItem = (index: number) => {
-    const updatedFaq = currentFaq.filter((_, i) => i !== index);
-    setCurrentFaq(updatedFaq);
-    setFormData(prev => ({ ...prev, faq: updatedFaq }));
-  };
-
-  /**
-   * Handles the generation of FAQs for the current listing using an API call.
-   * Sends a POST request to `/api/admin/listings/generate-faq`.
-   * Updates `currentFaq` and `formData.faq` with the generated FAQs on success.
-   * Manages loading states and displays feedback messages.
-   */
-  const generateFaq = async () => {
-    // ... (FAQ generation logic - to be reviewed/refactored later)
-    if (!listing?.description) {
-        setFaqGenerationMessage('Listing description is empty. Cannot generate FAQ.');
-        return;
-    }
-    setIsGeneratingFaq(true);
-    setFaqGenerationMessage('Generating FAQ based on description...');
-    try {
-        const response = await fetch('/api/admin/listings/generate-faq', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ description: listing.description, existingFaq: currentFaq }),
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to generate FAQ');
-        }
-        const data = await response.json();
-        setCurrentFaq(data.faq || []);
-        setFormData(prev => ({ ...prev, faq: data.faq || [] }));
-        setFaqGenerationMessage('FAQ generated successfully!');
-    } catch (error: any) {
-        setFaqGenerationMessage(`Error generating FAQ: ${error.message}`);
-    } finally {
-        setIsGeneratingFaq(false);
-    }
-  };
-
-  const pageTitle = listing ? `Edit: ${listing.title}` : 'Edit Listing';
-
-  const actionButtons = (
-    <div className="flex items-center space-x-2">
-      <Button variant="outline" size="icon" onClick={() => router.push('/admin/listings')} disabled={isSubmitting}>
-        <ArrowLeft className="h-4 w-4" />
-      </Button>
-      <Button type="submit" form="edit-listing-form" disabled={isSubmitting || isLoading} className="min-w-[120px]">
-        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-        Save Changes
-      </Button>
-    </div>
-  );
-
-  if (isLoading && !listing) { // Show full page loader only on initial load without data
-    return (
-      <AdminLayout pageTitle="Loading Listing..." actionButtons={actionButtons}>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (!listing && !isLoading) { // If loading finished and no listing found (e.g. invalid ID)
-    return (
-      <AdminLayout pageTitle="Error" actionButtons={actionButtons}>
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-destructive">Listing Not Found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>{error || 'The listing you are trying to edit could not be found. It may have been deleted or the ID is incorrect.'}</p>
-            <Button onClick={() => router.push('/admin/listings')} className="mt-4">Back to Listings</Button>
-          </CardContent>
-        </Card>
-      </AdminLayout>
-    );
-  }
 
   return (
-    <AdminLayout pageTitle={pageTitle} pageDescription={`Editing details for ${listing?.title || 'the listing'}`} pageIcon={Store} actionButtons={actionButtons}>
-      <Head>
-        <title>{pageTitle} - Admin</title>
-      </Head>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <Button variant="outline" onClick={() => router.back()}> 
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+        <h1 className="text-2xl font-semibold">{pageTitle || `Edit Listing: ${listingInitial?.title || '...'}`}</h1>
+        <Button form="editListingForm" type="submit" disabled={isLoading}>
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          Save Changes
+        </Button>
+      </div>
 
-      <form id="edit-listing-form" onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="mb-4 p-3 border border-destructive/30 bg-destructive/10 text-destructive rounded-md flex items-center text-sm">
-            <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
-            {error}
-          </div>
-        )}
-        {submitSuccess && (
-          <div className="mb-4 p-3 border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400 rounded-md flex items-center text-sm">
-            <CheckCircle2 className="h-5 w-5 mr-2 flex-shrink-0" />
-            {submitSuccess}
-          </div>
-        )}
-
+      {/* Main form content */}
+      <form id="editListingForm" onSubmit={handleSubmit} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Listing Information</CardTitle>
+            <CardTitle>Core Information</CardTitle>
             <CardDescription>Basic details about the business listing.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
-                <Input id="title" name="title" value={formData.title} onChange={handleChange} placeholder="e.g., The Cozy Cafe" required disabled={isSubmitting} />
-              </div>
-              <div>
-                <Label htmlFor="category_name">Category</Label>
-                <Input id="category_name" name="category_name" value={formData.category_name || ''} onChange={handleChange} placeholder="e.g., Restaurant, Cafe" disabled={isSubmitting} />
-              </div>
+          <CardContent className="space-y-6">
+            {/* Title, Slug, Description */}
+            <div>
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="slug">Slug (URL)</Label>
+              <Input id="slug" value={slug} onChange={(e) => setSlug(e.target.value)} required />
             </div>
             <div>
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" value={formData.description || ''} onChange={handleChange} placeholder="A short description of the business..." rows={5} disabled={isSubmitting} />
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={5} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="price_range">Price Range</Label>
-                <Input id="price_range" name="price_range" value={formData.price_range || ''} onChange={handleChange} placeholder="e.g., $, $$, $$$ " disabled={isSubmitting} />
-              </div>
-               <div>
-                <Label htmlFor="image_url">Main Image URL</Label>
-                <Input id="image_url" name="image_url" value={formData.image_url || ''} onChange={handleChange} placeholder="https://example.com/image.jpg" disabled={isSubmitting} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact & Address</CardTitle>
-            <CardDescription>How customers can reach and find the business.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Contact Info: Phone, Email, Website */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" name="phone" value={formData.phone || ''} onChange={handleChange} placeholder="e.g., (555) 123-4567" disabled={isSubmitting} />
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="website">Website URL</Label>
-                <Input id="website" name="website" type="url" value={formData.website || ''} onChange={handleChange} placeholder="https://www.example.com" disabled={isSubmitting} />
+                <Label htmlFor="emailAddress">Email Address</Label>
+                <Input id="emailAddress" type="email" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="websiteUrl">Website URL</Label>
+                <Input id="websiteUrl" type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
               </div>
             </div>
-            <div>
-              <Label htmlFor="address">Full Address (Street, City, etc.)</Label>
-              <Input id="address" name="address" value={formData.address || ''} onChange={handleChange} placeholder="e.g., 123 Main St, Anytown, USA" disabled={isSubmitting} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            {/* Address Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="street">Street</Label>
-                <Input id="street" name="street" value={formData.street || ''} onChange={handleChange} placeholder="e.g., 123 Main St" disabled={isSubmitting} />
+                <Label htmlFor="address">Full Address (Street, Number)</Label>
+                <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="neighborhood">Neighborhood</Label>
-                <Input id="neighborhood" name="neighborhood" value={formData.neighborhood || ''} onChange={handleChange} placeholder="e.g., Downtown" disabled={isSubmitting} />
+                <Input id="neighborhood" value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="city">City</Label>
-                <Input id="city" name="city" value={formData.city || ''} onChange={handleChange} placeholder="e.g., Anytown" disabled={isSubmitting} />
+                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="state">State / Province</Label>
-                <Input id="state" name="state" value={formData.state || ''} onChange={handleChange} placeholder="e.g., CA" disabled={isSubmitting} />
+                <Label htmlFor="stateProvince">State/Province</Label>
+                <Input id="stateProvince" value={stateProvince} onChange={(e) => setStateProvince(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="postal_code">Postal Code</Label>
-                <Input id="postal_code" name="postal_code" value={formData.postal_code || ''} onChange={handleChange} placeholder="e.g., 90210" disabled={isSubmitting} />
+                <Label htmlFor="postalCode">Postal Code</Label>
+                <Input id="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
               </div>
               <div>
-                <Label htmlFor="country_code">Country Code</Label>
-                <Input id="country_code" name="country_code" value={formData.country_code || ''} onChange={handleChange} placeholder="e.g., US" disabled={isSubmitting} />
+                <Label htmlFor="countryCode">Country Code (2-letter)</Label>
+                <Input id="countryCode" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} maxLength={2} />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Location Details</CardTitle>
-            <CardDescription>Geographical information for mapping.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* GeoLocation: Latitude, Longitude, Place ID */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="latitude">Latitude</Label>
-                <Input id="latitude" name="latitude" type="number" step="any" value={formData.latitude || ''} onChange={handleChange} placeholder="e.g., 34.0522" disabled={isSubmitting} />
+                <Input id="latitude" type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="longitude">Longitude</Label>
-                <Input id="longitude" name="longitude" type="number" step="any" value={formData.longitude || ''} onChange={handleChange} placeholder="e.g., -118.2437" disabled={isSubmitting} />
+                <Input id="longitude" type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="placeId">Google Place ID</Label>
+                <Input id="placeId" value={placeId} onChange={(e) => setPlaceId(e.target.value)} />
               </div>
             </div>
-            <div>
-              <Label htmlFor="place_id">Place ID (e.g., Google Place ID)</Label>
-              <Input id="place_id" name="place_id" value={formData.place_id || ''} onChange={handleChange} placeholder="Google Place ID" disabled={isSubmitting} />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Social Media Links (Optional)</CardTitle>
-            <CardDescription>Links to social media profiles.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            <div>
-              <Label htmlFor="facebook_url">Facebook URL</Label>
-              <Input id="facebook_url" name="facebook_url" type="url" value={formData.facebook_url || ''} onChange={handleChange} placeholder="https://facebook.com/yourpage" disabled={isSubmitting} />
-            </div>
-            <div>
-              <Label htmlFor="instagram_url">Instagram URL</Label>
-              <Input id="instagram_url" name="instagram_url" type="url" value={formData.instagram_url || ''} onChange={handleChange} placeholder="https://instagram.com/yourprofile" disabled={isSubmitting} />
-            </div>
-            <div>
-              <Label htmlFor="linkedin_url">LinkedIn URL</Label>
-              <Input id="linkedin_url" name="linkedin_url" type="url" value={formData.linkedin_url || ''} onChange={handleChange} placeholder="https://linkedin.com/company/yourcompany" disabled={isSubmitting} />
-            </div>
-            <div>
-              <Label htmlFor="pinterest_url">Pinterest URL</Label>
-              <Input id="pinterest_url" name="pinterest_url" type="url" value={formData.pinterest_url || ''} onChange={handleChange} placeholder="https://pinterest.com/yourprofile" disabled={isSubmitting} />
-            </div>
-            <div>
-              <Label htmlFor="youtube_url">YouTube URL</Label>
-              <Input id="youtube_url" name="youtube_url" type="url" value={formData.youtube_url || ''} onChange={handleChange} placeholder="https://youtube.com/yourchannel" disabled={isSubmitting} />
-            </div>
-            <div>
-              <Label htmlFor="x_com_url">X.com (Twitter) URL</Label>
-              <Input id="x_com_url" name="x_com_url" type="url" value={formData.x_com_url || ''} onChange={handleChange} placeholder="https://x.com/yourprofile" disabled={isSubmitting} />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Gallery Images</CardTitle>
-            <CardDescription>Manage additional images for the listing. URLs must be publicly accessible.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.galleryImages.map((image, index) => (
-              <div key={image.id || `new-${index}`} className="p-4 border rounded-md space-y-3 bg-muted/20">
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-x-4 gap-y-2 items-start">
-                  <div className="sm:col-span-6">
-                    <Label htmlFor={`galleryImageUrl-${index}`}>Image URL <span className="text-destructive">*</span></Label>
-                    <Input
-                      type="url"
-                      id={`galleryImageUrl-${index}`}
-                      name={`galleryImageUrl-${index}`}
-                      value={image.url}
-                      onChange={(e) => handleGalleryImageChange(index, 'url', e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      required
-                      disabled={isSubmitting}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="sm:col-span-5">
-                    <Label htmlFor={`galleryImageDesc-${index}`}>Description (Optional)</Label>
-                    <Input
-                      type="text"
-                      id={`galleryImageDesc-${index}`}
-                      name={`galleryImageDesc-${index}`}
-                      value={image.description}
-                      onChange={(e) => handleGalleryImageChange(index, 'description', e.target.value)}
-                      placeholder="Brief description of the image"
-                      disabled={isSubmitting}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="sm:col-span-1 flex items-end pt-1 sm:pt-0 h-full">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeGalleryImageField(index)}
-                      disabled={isSubmitting}
-                      className="w-full sm:w-auto mt-5 sm:mt-0"
-                      aria-label="Remove image"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {image.url && (
-                  <div className="mt-2 w-full max-w-[150px]">
-                    <img src={image.url} alt={image.description || `Gallery image ${index + 1}`} className="rounded-md object-contain border bg-white p-1" onError={(e) => e.currentTarget.style.display='none'} />
-                  </div>
-                )}
+            {/* Status & Visibility: Featured, Published, Temporarily Closed, Permanently Closed, Operational Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch id="isFeatured" checked={isFeatured} onCheckedChange={setIsFeatured} />
+                <Label htmlFor="isFeatured">Featured Listing</Label>
               </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addGalleryImageField}
-              disabled={isSubmitting}
-              className="mt-2"
-            >
-              <ImagePlus className="mr-2 h-4 w-4" /> Add Image
-            </Button>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch id="isPublished" checked={isPublished} onCheckedChange={setIsPublished} />
+                <Label htmlFor="isPublished">Published (Visible)</Label>
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch id="temporarilyClosed" checked={temporarilyClosed} onCheckedChange={setTemporarilyClosed} />
+                <Label htmlFor="temporarilyClosed">Temporarily Closed</Label>
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch id="permanentlyClosed" checked={permanentlyClosed} onCheckedChange={setPermanentlyClosed} />
+                <Label htmlFor="permanentlyClosed">Permanently Closed</Label>
+              </div>
+              <div>
+                <Label htmlFor="operationalStatus">Operational Status</Label>
+                <Select value={operationalStatus} onValueChange={setOperationalStatus}>
+                  <SelectTrigger id="operationalStatus">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPERATIONAL">Operational</SelectItem>
+                    <SelectItem value="CLOSED_TEMPORARILY">Closed Temporarily</SelectItem>
+                    <SelectItem value="CLOSED_PERMANENTLY">Closed Permanently</SelectItem>
+                    <SelectItem value="">Clear Status</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* FAQ Section */}
+        {/* SEO & Meta Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Frequently Asked Questions (FAQ)</CardTitle>
-            <CardDescription>Manage or generate FAQs for the listing. Clear and concise Q&As can improve user engagement.</CardDescription>
+            <CardTitle>SEO & Meta Information</CardTitle>
+            <CardDescription>Optimize for search engines and social sharing.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              {currentFaq.map((item, index) => (
-                <div key={`faq-${index}`} className="p-4 border rounded-md space-y-3 bg-muted/20">
-                  <div>
-                    <Label htmlFor={`faq-question-${index}`}>Question {index + 1}</Label>
-                    <Input
-                      id={`faq-question-${index}`}
-                      value={item.question}
-                      onChange={(e) => handleFaqChange(index, 'question', e.target.value)}
-                      placeholder="Enter question"
-                      disabled={isSubmitting || isGeneratingFaq}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor={`faq-answer-${index}`}>Answer {index + 1}</Label>
-                    <Textarea
-                      id={`faq-answer-${index}`}
-                      value={item.answer}
-                      onChange={(e) => handleFaqChange(index, 'answer', e.target.value)}
-                      placeholder="Enter answer"
-                      rows={3}
-                      disabled={isSubmitting || isGeneratingFaq}
-                      className="mt-1"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removeFaqItem(index)}
-                    disabled={isSubmitting || isGeneratingFaq}
-                    className="mt-1"
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove FAQ Item
-                  </Button>
-                </div>
-              ))}
+            <div>
+              <Label htmlFor="metaTitle">Meta Title</Label>
+              <Input id="metaTitle" value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} />
             </div>
-
-            {currentFaq.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No FAQs added yet. You can add them manually or try generating them with AI.</p>
-            )}
-
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addFaqItem}
-                disabled={isSubmitting || isGeneratingFaq}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add FAQ Item
-              </Button>
-              <Button
-                type="button"
-                onClick={generateFaq}
-                disabled={isGeneratingFaq || isSubmitting || !listing?.description}
-                variant="outline"
-              >
-                {isGeneratingFaq ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="mr-2 h-4 w-4" />
-                )}
-                {isGeneratingFaq ? 'Generating...' : 'Generate FAQ with AI'}
-              </Button>
+            <div>
+              <Label htmlFor="metaDescription">Meta Description</Label>
+              <Textarea id="metaDescription" value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} rows={3} />
             </div>
-            {faqGenerationMessage && (
-              <p className={`text-sm mt-2 p-2 rounded-md ${faqGenerationMessage.toLowerCase().includes('error') ? 'bg-destructive/10 text-destructive border border-destructive/30' : 'bg-green-500/10 text-green-700 border border-green-500/30'}`}>
-                {faqGenerationMessage}
-              </p>
-            )}
-             {!listing?.description && (
-                <p className="text-xs text-muted-foreground mt-1">
-                    Note: AI FAQ generation requires a listing description.
-                </p>
-            )}
+            <div>
+              <Label htmlFor="metaKeywords">Meta Keywords (comma-separated)</Label>
+              <Input id="metaKeywords" value={metaKeywords} onChange={(e) => setMetaKeywords(e.target.value)} />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Placeholder for Reviews - To be refactored/designed */}
-        {listing?.reviews && listing.reviews.length > 0 && (
+        {/* Social Media & Links Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Social Media & External Links</CardTitle>
+            <CardDescription>Links to social profiles and other relevant pages.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="googleMapsUrl">Google Maps URL</Label>
+              <Input id="googleMapsUrl" value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="menuUrl">Menu URL</Label>
+              <Input id="menuUrl" value={menuUrl} onChange={(e) => setMenuUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="reserveTableUrl">Reserve Table URL</Label>
+              <Input id="reserveTableUrl" value={reserveTableUrl} onChange={(e) => setReserveTableUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="facebookUrl">Facebook URL</Label>
+              <Input id="facebookUrl" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="instagramUrl">Instagram URL</Label>
+              <Input id="instagramUrl" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+              <Input id="linkedinUrl" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="pinterestUrl">Pinterest URL</Label>
+              <Input id="pinterestUrl" value={pinterestUrl} onChange={(e) => setPinterestUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="youtubeUrl">YouTube URL</Label>
+              <Input id="youtubeUrl" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} type="url" />
+            </div>
+            <div>
+              <Label htmlFor="xComUrl">X.com (Twitter) URL</Label>
+              <Input id="xComUrl" value={xComUrl} onChange={(e) => setXComUrl(e.target.value)} type="url" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Internal & Data Source Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Internal & Data Source</CardTitle>
+            <CardDescription>IDs, references, and data sourcing information.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="businessId">Business ID (Internal)</Label>
+                <Input id="businessId" type="number" value={businessId} onChange={(e) => setBusinessId(e.target.value === '' ? '' : parseInt(e.target.value))} />
+              </div>
+              <div>
+                <Label htmlFor="ownerUserId">Owner User ID (Internal)</Label>
+                <Input id="ownerUserId" value={ownerUserId} onChange={(e) => setOwnerUserId(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="priceRange">Price Range (e.g., $, $$, $$$)</Label>
+                <Input id="priceRange" value={priceRange} onChange={(e) => setPriceRange(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fid">FID (Feature ID)</Label>
+                <Input id="fid" value={fid} onChange={(e) => setFid(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="cid">CID (Cluster ID)</Label>
+                <Input id="cid" value={cid} onChange={(e) => setCid(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="reviewsCount">Reviews Count</Label>
+                <Input id="reviewsCount" type="number" value={reviewsCount} onChange={(e) => setReviewsCount(e.target.value === '' ? '' : parseInt(e.target.value))} />
+              </div>
+              <div>
+                <Label htmlFor="imagesCount">Images Count</Label>
+                <Input id="imagesCount" type="number" value={imagesCount} onChange={(e) => setImagesCount(e.target.value === '' ? '' : parseInt(e.target.value))} />
+              </div>
+              <div>
+                <Label htmlFor="scrapedAt">Scraped At (Date)</Label>
+                <Input id="scrapedAt" type="datetime-local" value={scrapedAt} onChange={(e) => setScrapedAt(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="googleFoodUrl">Google Food URL</Label>
+                <Input id="googleFoodUrl" type="url" value={googleFoodUrl} onChange={(e) => setGoogleFoodUrl(e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="url">Original URL (Source)</Label>
+                <Input id="url" type="url" value={url} onChange={(e) => setUrl(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="language">Language Code (e.g., en, es)</Label>
+                <Input id="language" value={language} onChange={(e) => setLanguage(e.target.value)} maxLength={10} />
+              </div>
+              <div>
+                <Label htmlFor="rank">Rank (Internal)</Label>
+                <Input id="rank" type="number" value={rank} onChange={(e) => setRank(e.target.value === '' ? '' : parseInt(e.target.value))} placeholder="Internal ranking score" />
+              </div>
+              <div>
+                <Label htmlFor="popularTimesLiveText">Popular Times Live Text</Label>
+                <Input id="popularTimesLiveText" value={popularTimesLiveText} onChange={(e) => setPopularTimesLiveText(e.target.value)} placeholder="e.g., Usually not busy" />
+              </div>
+              <div>
+                <Label htmlFor="popularTimesLivePercent">Popular Times Live Percent</Label>
+                <Input id="popularTimesLivePercent" type="number" value={popularTimesLivePercent} onChange={(e) => setPopularTimesLivePercent(e.target.value === '' ? '' : parseInt(e.target.value))} placeholder="0-100" />
+              </div>
+              <div>
+                <Label htmlFor="searchPageUrl">Source Search Page URL</Label>
+                <Input id="searchPageUrl" type="url" value={searchPageUrl} onChange={(e) => setSearchPageUrl(e.target.value)} placeholder="URL of page where data was found" />
+              </div>
+              <div>
+                <Label htmlFor="searchString">Source Search String</Label>
+                <Input id="searchString" value={searchString} onChange={(e) => setSearchString(e.target.value)} placeholder="Search query used" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Content Optimization Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Content Optimization</CardTitle>
+            <CardDescription>AI-powered content enhancement status.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch id="descriptionOptimized" checked={descriptionOptimized} onCheckedChange={setDescriptionOptimized} />
+              <Label htmlFor="descriptionOptimized">Description Optimized (AI)</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch id="faqOptimized" checked={faqOptimized} onCheckedChange={setFaqOptimized} />
+              <Label htmlFor="faqOptimized">FAQ Optimized (AI)</Label>
+            </div>
+          </CardContent>
+        </Card>
+            
+        {/* FAQ Display Section */}
+        {faqItems && faqItems.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Reviews</CardTitle>
-              <CardDescription>Customer reviews for this listing.</CardDescription>
+              <CardTitle>Frequently Asked Questions</CardTitle>
+              <CardDescription>This information is displayed on the listing page.</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">Review display will be refactored here.</p>
-              {/* Review display logic will be placed and styled here */}
+              <div className="space-y-4">
+                {faqItems.map((faq, index) => (
+                  <div key={index} className="p-3 border rounded-md bg-muted/20">
+                    <p className="font-semibold text-sm text-foreground">Q: {faq.question}</p>
+                    <p className="text-sm text-muted-foreground mt-1">A: {faq.answer}</p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
 
-        <div className="flex justify-end space-x-2 mt-8 pb-8">
-          <Button variant="outline" onClick={() => router.push('/admin/listings')} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button type="submit" form="edit-listing-form" disabled={isSubmitting || isLoading} className="min-w-[120px]">
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Save Changes
-          </Button>
-        </div>
+        {/* Additional Details (JSON) Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Additional Details (JSON)</CardTitle>
+            <CardDescription>Raw JSON data for advanced configuration.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Label htmlFor="additionalDetails">Raw JSON Data</Label>
+            <Textarea 
+              id="additionalDetails" 
+              value={additionalDetails} 
+              onChange={(e) => setAdditionalDetails(e.target.value)} 
+              placeholder='Enter additional JSON data, e.g., { "key": "value" }'
+              rows={5}
+              spellCheck="false"
+            />
+            <p className="mt-1 text-xs text-gray-500">Edit with caution. Must be valid JSON.</p>
+          </CardContent>
+        </Card>
+
+        {/* Placeholder for other sections like Categories, Amenities, Images, Opening Hours, etc. */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Related Data (Under Construction)</CardTitle>
+            <CardDescription>Management for categories, amenities, images, hours, etc.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-500">Categories, Amenities, Images, Opening Hours, etc. will go here.</p>
+            <p>Categories available: {allCategories?.length || 0}</p>
+            <p>Amenities available: {allAmenities?.length || 0}</p>
+          </CardContent>
+        </Card>
+
       </form>
-    </AdminLayout>
+    </div>
   );
 };
 
 export default EditListingPage;
+
+export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
+  const session = await getSession(context);
+  const paramsId = context.params?.id;
+  let id: string;
+
+  if (Array.isArray(paramsId)) {
+    id = paramsId[0];
+  } else if (paramsId) {
+    id = paramsId;
+  } else {
+    // Handle case where id is undefined (though Next.js usually ensures it for dynamic routes)
+    return {
+      notFound: true,
+    };
+  }
+
+  if (isNaN(parseInt(id))) {
+    console.error('[getServerSideProps] Invalid ID:', id);
+    return {
+      props: {
+        listingInitial: null,
+        error: 'Invalid listing ID format.',
+        pageTitle: 'Error: Invalid ID',
+        allCategories: (await prisma.listingCategory.findMany()).map(cat => ({ id: cat.category_id.toString(), name: cat.category_name })),
+        allAmenities: (await prisma.listingAttribute.findMany()).map(am => ({ amenity_id: am.attribute_id.toString(), name: am.attribute_key, icon_svg: am.icon_url || '' })),
+      },
+    };
+  }
+
+  const listingId = parseInt(id);
+
+  if (!session || session.user?.role !== 'ADMIN') {
+    return {
+      redirect: {
+        destination: `/login?callbackUrl=${encodeURIComponent(context.resolvedUrl)}`,
+        permanent: false,
+      },
+    };
+  }
+
+  try {
+    const listingInclude = {
+      imageUrls: { 
+        select: { 
+          image_url_id: true, 
+          url: true, 
+          description: true
+        } 
+      },
+      categories: { include: { category: true } },
+      businessAttributes: { 
+        select: { 
+          value: true, 
+          listingAttribute: { 
+            select: {
+              attribute_id: true,
+              attribute_key: true,
+              icon_url: true,
+            }
+          }
+        }
+      },
+      openingHours: true,
+      // No 'reviews' include here, assuming it's not directly needed for this form's initial data
+      // (e.g., listing not found but handled gracefully by returning null)
+    };
+
+    // Fetch all categories and amenities for dropdowns
+    const allCategoriesFromDb = await prisma.listingCategory.findMany();
+    const allAmenitiesFromDb = await prisma.listingAttribute.findMany(); 
+
+    const listingFromDb = await prisma.listingBusiness.findUnique({
+      where: { listing_business_id: listingId },
+      include: listingInclude,
+    });
+
+    // Ensure listingFromDb is not null before proceeding
+    if (!listingFromDb) {
+      return {
+        props: {
+          listingInitial: null,
+          error: 'Listing not found.',
+          pageTitle: `Error: Listing ID ${id} Not Found`,
+          allCategories: (await prisma.listingCategory.findMany()).map(cat => ({ 
+            id: cat.category_id.toString(), 
+            name: cat.category_name 
+          })),
+          allAmenities: (await prisma.listingAttribute.findMany()).map(am => ({ 
+            amenity_id: am.attribute_id.toString(), 
+            name: am.attribute_key 
+          })),
+        },
+      };
+    }
+
+    // Prepare mapped categories and amenities for serializeListing and page props
+    // These need to be in a scope accessible by the successful return props
+    const mappedCategories = allCategoriesFromDb.map(cat => ({ 
+      id: cat.category_id.toString(), 
+      name: cat.category_name 
+    }));
+    const mappedAmenities = allAmenitiesFromDb.map(am => ({ 
+      amenity_id: am.attribute_id.toString(), 
+      name: am.attribute_key,
+      icon_svg: am.icon_url || '', // Assuming icon_url can be used for icon_svg if needed by SerializedAmenity
+    }));
+
+    let serializedListing: AdminSerializedListing | null = null;
+    try {
+      serializedListing = serializeListing(listingFromDb, mappedCategories, mappedAmenities);
+    } catch (serializationError) {
+      console.error('Serialization error:', serializationError);
+      // In case of serialization error, we still want to provide allCategories and allAmenities if fetched
+      return {
+        props: {
+          listingInitial: null,
+          error: 'Failed to serialize listing data.',
+          pageTitle: `Error Editing Listing ID: ${id}`,
+          allCategories: mappedCategories, // Use pre-mapped values
+          allAmenities: mappedAmenities,   // Use pre-mapped values
+        },
+      };
+    }
+
+    if (!serializedListing) {
+      console.error(`[getServerSideProps] Failed to serialize listing ID: ${id}`);
+      return { 
+        props: { 
+          listingInitial: null, 
+          error: 'Failed to serialize listing data (post-try).', 
+          pageTitle: `Error Editing Listing ID: ${id}`,
+          allCategories: mappedCategories,
+          allAmenities: mappedAmenities,
+        }
+      };
+    }
+
+    let pageTitle = `Edit Listing: ${serializedListing.title}`;
+
+    return {
+      props: {
+        listingInitial: serializedListing,
+        pageTitle,
+        allCategories: mappedCategories, // Use the same mapped version for props
+        allAmenities: mappedAmenities,   // Use the same mapped version for props
+      },
+    };
+
+  } catch (err) {
+    console.error(`Error in getServerSideProps for listing ID ${id}:`, err);
+    let allCategoriesFromDbForError: { id: string; name: string }[] = [];
+    let allAmenitiesFromDbForError: { amenity_id: string; name: string }[] = [];
+    try {
+      // Ensure mapping is consistent in error path as well
+      allCategoriesFromDbForError = (await prisma.listingCategory.findMany()).map(cat => ({ 
+        id: cat.category_id.toString(), 
+        name: cat.category_name 
+      }));
+      allAmenitiesFromDbForError = (await prisma.listingAttribute.findMany()).map(am => ({ 
+        amenity_id: am.attribute_id.toString(), 
+        name: am.attribute_key 
+      }));
+    } catch (fetchErr) {
+      console.error('Failed to fetch categories/amenities during error handling:', fetchErr);
+    }
+
+    return { 
+      props: { 
+        listingInitial: null,
+        error: `Failed to load listing data: ${(err as Error).message}`,
+        pageTitle: `Error Editing Listing ID: ${id}`,
+        allCategories: allCategoriesFromDbForError,
+        allAmenities: allAmenitiesFromDbForError,
+      }
+    };
+  }
+};

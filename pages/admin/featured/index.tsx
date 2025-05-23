@@ -82,19 +82,24 @@ const AdminFeaturedPageContent = () => {
 
     for (const listing of listings) {
       const listingIdStr = listing.business_id;
-      const currentSelection = selectedListings[listingIdStr];
-      if (currentSelection !== undefined && currentSelection !== listing.isFeatured) {
+      const newIsFeaturedState = selectedListings[listingIdStr];
+      // Only make an API call if the selected state is different from the original isFeatured state
+      if (newIsFeaturedState !== undefined && newIsFeaturedState !== listing.isFeatured) {
         operations.push(
-          fetch(`/api/admin/listings/${listing.business_id}/toggle-feature`, {
+          fetch(`/api/admin/listings/${listing.business_id}`, { 
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isFeatured: newIsFeaturedState }), 
+            credentials: 'include', 
           })
           .then(async res => {
             if (!res.ok) {
-              const errorData = await res.json().catch(() => ({ message: 'Failed to toggle feature status' }));
+              const errorData = await res.json().catch(() => ({ message: 'Failed to update feature status' }));
               throw new Error(errorData.message || `Error updating ${listing.title}`);
             }
             successCount++;
+            // Optionally, update the local listing.isFeatured state here if not re-fetching all
+            // For simplicity, we are re-fetching all below.
             return res.json(); 
           })
           .catch(err => {

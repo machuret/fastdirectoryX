@@ -13,47 +13,46 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from 'sonner'; // For toast notifications
+import { UserRole, UserStatus } from '@prisma/client'; // Import from Prisma client
 
-// Define UserRole and UserStatus enums to match Prisma schema if not already globally available
-// For simplicity, defining them here if not imported from a central types file.
-// Ensure these match exactly with your Prisma schema definitions.
-const UserRole = {
-  ADMIN: 'ADMIN',
-  USER: 'USER',
-  EDITOR: 'EDITOR', // Assuming EDITOR is a role
-  // ... other roles
-} as const;
-
-const UserStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  PENDING: 'PENDING',
-  SUSPENDED: 'SUSPENDED',
-  // ... other statuses
-} as const;
-
-type UserRoleType = typeof UserRole[keyof typeof UserRole];
-type UserStatusType = typeof UserStatus[keyof typeof UserStatus];
-
+/**
+ * Zod schema for validating the new user form data.
+ * Defines rules for name, email, password, confirmPassword, role, and status fields.
+ */
 const newUserFormSchema = z.object({
   name: z.string().min(3, { message: "Full name must be at least 3 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   confirmPassword: z.string(),
-  role: z.nativeEnum(UserRole).optional(), // Made optional, default is handled by useForm's defaultValues
-  // status: z.nativeEnum(UserStatus).default(UserStatus.ACTIVE), // Status might be set by backend by default
+  role: z.nativeEnum(UserRole), 
+  status: z.nativeEnum(UserStatus),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match.",
   path: ["confirmPassword"], // Path to field to display error
 });
 
+/**
+ * Type representing the validated values from the new user form.
+ * Inferred from the newUserFormSchema.
+ */
 type NewUserFormValues = z.infer<typeof newUserFormSchema>;
 
+/**
+ * AdminAddNewUserPage component for creating a new user account.
+ * Provides a form with fields for user details, password, role, and status.
+ * Submits data to the POST /api/admin/users endpoint.
+ */
 const AdminAddNewUserPage = () => {
+  /** @state {boolean} isLoading - Indicates if the form submission is in progress. */
   const [isLoading, setIsLoading] = useState(false);
+  /** @state {string | null} apiError - Stores error messages from the API submission. */
   const [apiError, setApiError] = useState<string | null>(null);
   const router = useRouter(); // Initialize router
 
+  /**
+   * React Hook Form instance for managing the new user form.
+   * Uses Zod for schema validation and sets default values for form fields.
+   */
   const form = useForm<NewUserFormValues>({
     resolver: zodResolver(newUserFormSchema),
     defaultValues: {
@@ -62,15 +61,24 @@ const AdminAddNewUserPage = () => {
       password: "",
       confirmPassword: "",
       role: UserRole.USER,
-      // status: UserStatus.ACTIVE,
+      status: UserStatus.ACTIVE, // Add status to defaultValues
     },
   });
 
+  /**
+   * Handles the submission of the new user form.
+   * Sets loading state, sends a POST request to the API with form data.
+   * On success, displays a toast notification and redirects to the user list page.
+   * On failure, sets API error state and displays an error toast.
+   * @param {NewUserFormValues} data - The validated form data.
+   */
   async function onSubmit(data: NewUserFormValues) {
     setIsLoading(true);
     setApiError(null);
     try {
       // Exclude confirmPassword from the data sent to the API
+      // Role and status will be included; if they were undefined (e.g. not set by form defaultValues),
+      // the API defaults would kick in. With useForm defaultValues, they should always be present.
       const { confirmPassword, ...userData } = data;
 
       const response = await fetch('/api/admin/users', {
@@ -189,26 +197,48 @@ const AdminAddNewUserPage = () => {
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="role">Role <span className="text-destructive">*</span></Label>
-              <Select 
-                {...form.register("role")}
-                defaultValue={form.getValues("role") || UserRole.USER} 
-                onValueChange={(value) => form.setValue('role', value as UserRoleType, { shouldValidate: true })} 
-                disabled={isLoading}
-              >
-                <SelectTrigger id="role" className="mt-1">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.values(UserRole).map((roleValue) => (
-                    <SelectItem key={roleValue} value={roleValue}>
-                      {roleValue.charAt(0).toUpperCase() + roleValue.slice(1).toLowerCase()} {/* Nicer formatting */}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.role && <p className="text-sm text-red-500 mt-1">{form.formState.errors.role.message}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="role">Role <span className="text-destructive">*</span></Label>
+                <Select 
+                  value={form.watch("role")}
+                  onValueChange={(value) => form.setValue('role', value as UserRole, { shouldValidate: true })} 
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id="role" className="mt-1">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(UserRole).map((roleValue) => (
+                      <SelectItem key={roleValue} value={roleValue}>
+                        {roleValue}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.role && <p className="text-sm text-red-500 mt-1">{form.formState.errors.role.message}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="status">Status <span className="text-destructive">*</span></Label>
+                <Select 
+                  value={form.watch("status")}
+                  onValueChange={(value) => form.setValue('status', value as UserStatus, { shouldValidate: true })} 
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id="status" className="mt-1">
+                    <SelectValue placeholder="Select a status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.values(UserStatus).map((statusValue) => (
+                      <SelectItem key={statusValue} value={statusValue}>
+                        {statusValue}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.status && <p className="text-sm text-red-500 mt-1">{form.formState.errors.status.message}</p>}
+              </div>
             </div>
 
           </CardContent>

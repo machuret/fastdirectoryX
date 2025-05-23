@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { GetServerSideProps, NextPage } from 'next';
 import { getSession } from 'next-auth/react';
 import Link from 'next/link';
-import AdminLayout from '@/components/admin/AdminLayout'; // Preferred sidebar AdminLayout
 import { UserRole, UserStatus } from '@prisma/client'; // For type safety
 
 /**
@@ -37,6 +36,8 @@ interface UserManagementProps {
   usersInitial: UserFromAPI[];
   /** Optional error message if fetching users failed server-side. */
   error?: string;
+  /** Page title passed by getServerSideProps for _app.tsx to use. */
+  pageTitle: string;
 }
 
 // Helper component to format date on client side to avoid hydration mismatch
@@ -74,7 +75,7 @@ const ClientSideDate = ({ dateString }: { dateString: string | Date }) => {
  * @param {UserManagementProps} props - The props for the component, including initial user data.
  * @returns {JSX.Element} The rendered user management page.
  */
-const UserManagementPage: NextPage<UserManagementProps> = ({ usersInitial, error }) => {
+const UserManagementPage: NextPage<UserManagementProps> = ({ usersInitial, error, pageTitle }) => {
   const [users, setUsers] = useState<UserFromAPI[]>(usersInitial || []);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -107,82 +108,81 @@ const UserManagementPage: NextPage<UserManagementProps> = ({ usersInitial, error
 
   if (error) {
     return (
-      <AdminLayout pageTitle="User Management">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">{pageTitle}</h1>
         <p className="text-red-500">Error loading users: {error}</p>
-      </AdminLayout>
+      </div>
     );
   }
 
   return (
-    <AdminLayout pageTitle="User Management">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <Link href="/admin/usermanagement/new" legacyBehavior>
-            <a className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Add New User
-            </a>
-          </Link>
-        </div>
-
-        {feedback && (
-          <div className={`p-4 mb-4 text-sm rounded-lg ${feedback.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-            {feedback.message}
-          </div>
-        )}
-
-        <div className="bg-white shadow-md rounded-lg overflow-x-auto">
-          {users.length === 0 ? (
-            <p className="p-4 text-center text-gray-500">No users found.</p>
-          ) : (
-            <table className="min-w-full leading-normal">
-              <thead>
-                <tr>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Joined</th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">{user.name || 'N/A'}</td>
-                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">{user.email}</td>
-                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === UserRole.ADMIN ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
-                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === UserStatus.ACTIVE ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm"><ClientSideDate dateString={user.createdAt} /></td>
-                    <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm whitespace-nowrap">
-                      <Link href={`/admin/usermanagement/edit/${user.id}`} legacyBehavior>
-                        <a className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                      </Link>
-                      <button 
-                        onClick={() => handleDeleteUser(user.id)} 
-                        className="text-red-600 hover:text-red-900"
-                        // Disable delete for the current admin user if we knew their ID here
-                        // This check is better done server-side or by comparing with session.user.id
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">{pageTitle}</h1>
+        <Link href="/admin/usermanagement/new" legacyBehavior>
+          <a className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add New User
+          </a>
+        </Link>
       </div>
-    </AdminLayout>
+
+      {feedback && (
+        <div className={`p-4 mb-4 text-sm rounded-lg ${feedback.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          {feedback.message}
+        </div>
+      )}
+
+      <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+        {users.length === 0 ? (
+          <p className="p-4 text-center text-gray-500">No users found.</p>
+        ) : (
+          <table className="min-w-full leading-normal">
+            <thead>
+              <tr>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Joined</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">{user.name || 'N/A'}</td>
+                  <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">{user.email}</td>
+                  <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === UserRole.ADMIN ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === UserStatus.ACTIVE ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm"><ClientSideDate dateString={user.createdAt} /></td>
+                  <td className="px-5 py-4 border-b border-gray-200 bg-white text-sm whitespace-nowrap">
+                    <Link href={`/admin/usermanagement/edit/${user.id}`} legacyBehavior>
+                      <a className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                    </Link>
+                    <button 
+                      onClick={() => handleDeleteUser(user.id)} 
+                      className="text-red-600 hover:text-red-900"
+                      // Disable delete for the current admin user if we knew their ID here
+                      // This check is better done server-side or by comparing with session.user.id
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -195,43 +195,41 @@ const UserManagementPage: NextPage<UserManagementProps> = ({ usersInitial, error
  */
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
+  const pageTitle = "User Management"; // Added for _app.tsx to use
 
   // @ts-ignore session.user.role is custom and may not be on default NextAuth Session type
   if (!session || session.user?.role !== UserRole.ADMIN) {
     return {
       redirect: {
-        destination: '/login?error=NotAuthorizedAdmin',
+        destination: '/login?error=Unauthorized',
         permanent: false,
       },
     };
   }
 
   try {
-    // Fetch users from your API. Make sure the base URL is correct for SSR.
-    // In a real app, use an internal fetch or directly call your service layer.
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'; 
+    // Fetch users from your API endpoint
+    // Ensure your local dev server is running if fetching from localhost
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'; // Fallback for local dev
     const res = await fetch(`${baseUrl}/api/admin/users`, {
       headers: {
-        // Pass along the session cookie if needed for API route authentication
-        // This is typically handled by Next.js automatically for same-origin fetches
-        // but can be explicit if issues arise or if API is on a different domain.
-        'Cookie': context.req.headers.cookie || '', 
+        // Pass along the session cookie if your API endpoint is protected
+        // and needs to verify the admin session itself.
+        cookie: context.req.headers.cookie || '',
       },
     });
 
     if (!res.ok) {
       const errorData = await res.json();
-      console.error('SSR Error fetching users:', errorData.message);
-      return { props: { usersInitial: [], error: errorData.message || 'Failed to load users.' } };
+      console.error('getServerSideProps: Failed to fetch users:', errorData.message);
+      return { props: { usersInitial: [], error: errorData.message || 'Failed to load users.', pageTitle } };
     }
 
     const usersInitial: UserFromAPI[] = await res.json();
-    return {
-      props: { usersInitial },
-    };
-  } catch (error: any) {
-    console.error('SSR Exception fetching users:', error);
-    return { props: { usersInitial: [], error: 'An unexpected error occurred.' } };
+    return { props: { usersInitial, pageTitle } };
+  } catch (err: any) {
+    console.error('getServerSideProps: Error fetching users:', err);
+    return { props: { usersInitial: [], error: err.message || 'An unexpected error occurred.', pageTitle } };
   }
 };
 

@@ -55,6 +55,9 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse<O
 
 Ensure the questions are relevant to a potential customer and the answers are concise and informative based on the provided business details.`;
 
+      console.log(`[FAQ Generation - Listing ID: ${listingId}] Sending prompt to OpenAI:`);
+      console.log(prompt);
+
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo-0125',
         messages: [{ role: 'user', content: prompt }],
@@ -64,7 +67,11 @@ Ensure the questions are relevant to a potential customer and the answers are co
 
       const rawResponse = completion.choices[0]?.message?.content;
 
+      console.log(`[FAQ Generation - Listing ID: ${listingId}] Raw response from OpenAI:`);
+      console.log(rawResponse);
+
       if (!rawResponse) {
+        console.error(`[FAQ Generation - Listing ID: ${listingId}] OpenAI returned no content.`);
         return res.status(500).json({ error: 'Failed to get a response from OpenAI.' });
       }
 
@@ -76,24 +83,31 @@ Ensure the questions are relevant to a potential customer and the answers are co
         } else if (parsedResponse.faq && Array.isArray(parsedResponse.faq)) {
           faqArray = parsedResponse.faq;
         } else {
+          // More flexible: look for the first property that is an array
           const firstArrayKey = Object.keys(parsedResponse).find(key => Array.isArray(parsedResponse[key]));
           if (firstArrayKey) {
+            console.log(`[FAQ Generation - Listing ID: ${listingId}] Found FAQ array under key: ${firstArrayKey}`);
             faqArray = parsedResponse[firstArrayKey];
           } else {
+            console.error(`[FAQ Generation - Listing ID: ${listingId}] FAQ array not found in expected structure. Parsed response:`, parsedResponse);
             throw new Error('FAQ array not found in the expected structure in OpenAI response.');
           }
         }
         
         if (!faqArray.every(item => typeof item.question === 'string' && typeof item.answer === 'string')) {
+          console.error(`[FAQ Generation - Listing ID: ${listingId}] Invalid FAQ item structure. Parsed array:`, faqArray);
           throw new Error('Invalid FAQ item structure received from OpenAI.');
         }
 
+        console.log(`[FAQ Generation - Listing ID: ${listingId}] Successfully parsed FAQ array:`, faqArray);
+
       } catch (parseError: any) {
-        console.error('Error parsing OpenAI FAQ response:', parseError, 'Raw response:', rawResponse);
+        console.error(`[FAQ Generation - Listing ID: ${listingId}] Error parsing OpenAI FAQ response:`, parseError, 'Raw response:', rawResponse);
         return res.status(500).json({ error: `Error parsing OpenAI response: ${parseError.message}` });
       }
 
       if (faqArray.length === 0) {
+        console.warn(`[FAQ Generation - Listing ID: ${listingId}] OpenAI returned an empty FAQ array.`);
         return res.status(500).json({ error: 'OpenAI returned an empty FAQ array.' });
       }
 
@@ -108,7 +122,7 @@ Ensure the questions are relevant to a potential customer and the answers are co
       return res.status(200).json({ message: 'FAQ generated successfully', faq: faqArray });
 
     } catch (error: any) {
-      console.error('Error optimizing FAQ:', error);
+      console.error(`[FAQ Generation - Listing ID: ${listingIdQuery}] Error optimizing FAQ:`, error);
       if (error.code === 'P2025') {
         return res.status(404).json({ error: 'Business listing not found for update.' });
       }

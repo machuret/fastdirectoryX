@@ -37,9 +37,9 @@ const FeaturedListingsSection: React.FC<FeaturedListingsSectionProps> = ({ listi
                   <Image 
                     src={listing.displayImageUrl} 
                     alt={listing.title || 'Listing image'}
-                    layout="fill"
-                    objectFit="cover"
-                    className="transition-transform duration-500 hover:scale-105"
+                    fill
+                    sizes="100vw" // Default for fill, can be refined e.g. (max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw
+                    className="object-cover transition-transform duration-500 hover:scale-105"
                   />
                 </div>
               ) : (

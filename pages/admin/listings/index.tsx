@@ -115,43 +115,56 @@ interface OptimizeResponse {
 const ListingsAdminPageContent = () => {
   const { setPageSpecificHeaderElements } = useAdminHeader();
 
-  useEffect(() => {
-    setPageSpecificHeaderElements({
-      title: 'Business Listings',
-      icon: <List />,
-      description: 'Manage all business listings in the system.',
-      actionButtons: (
-        <Link href="/admin/listings/new" passHref legacyBehavior>
-          <Button asChild>
-            <a><Plus className="mr-2 h-4 w-4" /> New Listing</a>
-          </Button>
-        </Link>
-      )
-    });
-  }, [setPageSpecificHeaderElements]);
-
-  /** State for the array of business listings displayed on the page. */
   const [listings, setListings] = useState<ClientListingBusiness[]>([]);
-  /** State to indicate if listings are currently being fetched. */
   const [loading, setLoading] = useState(true);
-  /** State for storing and displaying error messages related to fetching or operations. */
   const [error, setError] = useState<string | null>(null);
-  /** State for storing the IDs of currently selected listings for batch operations. */
   const [selectedIds, setSelectedIds] = useState<string[]>([]); 
-  /** State for the ID of the listing whose description is currently being optimized (shows loading indicator). */
   const [optimizingId, setOptimizingId] = useState<string | null>(null);
-  /** State to indicate if a mass optimization process is in progress. */
   const [isMassOptimizing, setIsMassOptimizing] = useState(false);
-  /** State for displaying messages related to description optimization. */
   const [optimizeMessage, setOptimizeMessage] = useState<string | null>(null);
-  /** State for the 'select all' checkbox, determining if all listings are selected. */
   const [selectAll, setSelectAll] = useState(false);
 
-  /**
-   * Fetches business listings from the API (`/api/admin/listings`).
-   * Updates loading, error, and listings states.
-   * Resets selected IDs upon fetching new data.
-   */
+  const handleMassOptimizeDescriptions = async () => {
+    if (selectedIds.length === 0) {
+      setOptimizeMessage('No listings selected for optimization.');
+      return;
+    }
+
+    setIsMassOptimizing(true);
+    setOptimizeMessage('Starting mass optimization...');
+    setError(null);
+
+    try {
+      const response = await fetch('/api/admin/listings/mass-optimize-descriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `Failed to mass optimize descriptions: ${response.statusText}`);
+      }
+
+      setOptimizeMessage(result.message || `Successfully processed ${result.successCount} listings, ${result.failureCount} failed.`);
+      // Refresh listings to show updated status
+      fetchListings(); 
+      setSelectedIds([]); // Clear selection after operation
+      setSelectAll(false);
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during mass optimization.';
+      setError(errorMessage);
+      setOptimizeMessage(null); // Clear optimization message on error
+      console.error('Mass optimization error:', err);
+    } finally {
+      setIsMassOptimizing(false);
+    }
+  };
+
   const fetchListings = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -160,7 +173,7 @@ const ListingsAdminPageContent = () => {
       if (!response.ok) {
         throw new Error(`Failed to fetch listings: ${response.statusText}`);
       }
-      const data: ClientListingBusiness[] = await response.json(); // API returns business_id as string
+      const data: ClientListingBusiness[] = await response.json(); 
       setListings(data);
       setSelectedIds([]); 
     } catch (err) {
@@ -174,6 +187,39 @@ const ListingsAdminPageContent = () => {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    setPageSpecificHeaderElements({
+      title: 'Business Listings',
+      icon: <List />,
+      description: 'Manage all business listings in the system.',
+      actionButtons: (
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleMassOptimizeDescriptions}
+            disabled={selectedIds.length === 0 || isMassOptimizing}
+            variant="outline"
+          >
+            {isMassOptimizing ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...</>
+            ) : (
+              <><Sparkles className="mr-2 h-4 w-4" /> Mass Optimize ({selectedIds.length})</>
+            )}
+          </Button>
+          <Link href="/admin/listings/new" passHref legacyBehavior>
+            <Button asChild>
+              <a><Plus className="mr-2 h-4 w-4" /> New Listing</a>
+            </Button>
+          </Link>
+        </div>
+      )
+    });
+  }, [setPageSpecificHeaderElements, selectedIds, isMassOptimizing]);
+
+  /**
+   * Fetches business listings from the API (`/api/admin/listings`).
+   * Updates loading, error, and listings states.
+   * Resets selected IDs upon fetching new data.
+   */
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
@@ -374,6 +420,21 @@ const ListingsAdminPageContent = () => {
   if (loading) return <div className="flex items-center justify-center h-full text-gray-900"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <span className="ml-2">Loading listings...</span></div>;
   if (error) return <div className="text-red-600 bg-red-100 border border-red-400 p-4 rounded-md"><AlertTriangle className="inline h-5 w-5 mr-2" />Error: {error}</div>;
 
+  const renderStatusMessages = () => (
+    <>
+      {error && (
+        <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive border border-destructive/30 flex items-center">
+          <AlertTriangle className="h-5 w-5 mr-2" /> {error}
+        </div>
+      )}
+      {optimizeMessage && !error && (
+        <div className="mb-4 p-3 rounded-md bg-blue-500/10 text-blue-700 border border-blue-500/30 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/40 flex items-center">
+          <Info className="h-5 w-5 mr-2" /> {optimizeMessage}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
       <Card className="text-gray-900 shadow-lg">
@@ -515,6 +576,7 @@ const ListingsAdminPageContent = () => {
           )}
         </CardContent>
       </Card>
+      {renderStatusMessages()}
     </>
   );
 };

@@ -142,6 +142,7 @@ export function serializeAdminListing(
  * @route GET /api/admin/listings
  * @description Fetches all business listings. Supports a 'minimal' version for dropdowns.
  * @queryParam {string} [minimal] - If 'true', returns a minimal list (id, title).
+ * @queryParam {string} [is_featured] - If 'true', filters listings to only include those where 'isFeatured' is true.
  * @returns {Promise<void>} Responds with an array of listings or an error message.
  * @successResponse 200 OK - {SerializedListingBusiness[] | {business_id: string, title: string}[]} Array of listings.
  * @errorResponse 500 Internal Server Error - If an error occurs during fetching.
@@ -185,7 +186,7 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
   // }
 
   if (req.method === 'GET') {
-    const { minimal } = req.query;
+    const { minimal, is_featured } = req.query;
 
     if (minimal === 'true') {
       try {
@@ -211,7 +212,13 @@ export default async function handle(req: NextApiRequest, res: NextApiResponse) 
     }
 
     try {
+      const whereClause: Prisma.ListingBusinessWhereInput = {};
+      if (is_featured === 'true') {
+        whereClause.isFeatured = true;
+      }
+
       const listingsData = await prisma.listingBusiness.findMany({
+        where: whereClause,
         orderBy: {
           title: 'asc',
         },

@@ -43,7 +43,8 @@ interface SerializedPublicListing extends Omit<ListingBusiness,
   'createdAt' | 
   'descriptionLastOptimizedAt' |
   'average_rating' | 
-  'reviews' 
+  'reviews' | 
+  'categories' // Exclude original categories from serialized type
 > {
   listing_business_id: string; 
   latitude: string | null; 
@@ -56,6 +57,7 @@ interface SerializedPublicListing extends Omit<ListingBusiness,
   title: string;
   description: string | null;
   category_name: string | null;
+  category_slug: string | null; // Added category_slug
   address: string | null;
   phone: string | null;
   website: string | null;
@@ -75,6 +77,7 @@ interface SerializedPublicListing extends Omit<ListingBusiness,
   pinterest_url: string | null;
   youtube_url: string | null;
   x_com_url: string | null;
+  faq: { question: string; answer: string; }[] | null; // Made FAQ field non-optional
 }
 
 // Define a type for individual gallery images
@@ -107,6 +110,7 @@ const serializeListing = (
   listing: ListingBusiness & { 
     imageUrls?: RawListingImage[]; 
     reviews?: RawListingReviewData[]; 
+    categories?: { category: { category_name: string; slug: string; } | null }[];
   }
 ): SerializedPublicListing => {
   const serialized: Partial<SerializedPublicListing> = {};
@@ -171,7 +175,6 @@ const serializeListing = (
 
   serialized.title = (listing as any).title ?? ''; 
   serialized.description = (listing as any).description ?? null;
-  serialized.category_name = (listing as any).category_name ?? null;
   serialized.address = (listing as any).address ?? null;
   serialized.phone = (listing as any).phone ?? null;
   serialized.website = (listing as any).website ?? null;
@@ -192,6 +195,24 @@ const serializeListing = (
   serialized.youtube_url = (listing as any).youtube_url ?? null;
   serialized.x_com_url = (listing as any).x_com_url ?? null;
 
+  // Populate category_name and category_slug from the new categories structure
+  if (listing.categories && listing.categories.length > 0 && listing.categories[0] && listing.categories[0].category) {
+    serialized.category_name = listing.categories[0].category.category_name;
+    serialized.category_slug = listing.categories[0].category.slug;
+  } else {
+    // Fallback to existing category_name if categories structure isn't available or populated
+    // This maintains backward compatibility if the include isn't there yet
+    serialized.category_name = (listing as any).category_name ?? null;
+    serialized.category_slug = null; 
+  }
+
+  // Copy FAQ data if it exists
+  if (listing.faq && Array.isArray(listing.faq)) {
+    serialized.faq = listing.faq as { question: string; answer: string; }[];
+  } else {
+    serialized.faq = null;
+  }
+
   return serialized as SerializedPublicListing;
 };
 
@@ -199,64 +220,59 @@ export const getServerSideProps: GetServerSideProps<ListingPageProps> = async (c
   const { slug } = context.params || {}; 
 
   if (!slug || typeof slug !== 'string') {
-    return { 
-      props: { 
-        listing: null, 
-        error: 'Listing slug is missing or invalid.', 
-        requestedSlug: (typeof slug === 'string' ? slug : null) 
-      }
-    };
+    return { notFound: true };
   }
 
   try {
     const listingData = await prisma.listingBusiness.findUnique({
       where: { slug: slug }, 
       include: {
-        imageUrls: { 
+        imageUrls: {
           select: {
+            image_url_id: true,
             url: true,
             description: true,
-            image_url_id: true, 
           },
-          orderBy: {
-            image_url_id: 'asc' 
-          }
+          take: 10, // Limit number of images
         },
-        reviews: { 
+        reviews: { // This should match your actual ListingReview model relation
           select: {
             review_id: true,
             reviewer_name: true,
-            // reviewer_avatar_url: true, 
             review_text: true,
             rating: true,
             published_at_date: true,
-            created_at: true, 
+            created_at: true,
           },
-          orderBy: {
-            created_at: 'desc' 
-          },
-          take: 10 
-        }
+          orderBy: { created_at: 'desc' }, 
+          take: 10, // Limit reviews shown on page, more can be loaded via API
+        },
+        categories: { // Relation from ListingBusiness to ListingBusinessCategory (join table)
+          include: {    // Use 'include' to fetch ListingBusinessCategory records
+            // This ensures we get the full ListingBusinessCategory object, which includes the listingCategory relation
+            category: { // This is the relation field on ListingBusinessCategory pointing to ListingCategory
+              select: {        // Select specific fields from the related ListingCategory
+                category_name: true,
+                slug: true
+              }
+            }
+          }
+        },
       }
     });
 
     if (!listingData) {
-      return { 
-        props: { 
-          listing: null, 
-          error: 'Listing not found.', 
-          requestedSlug: slug 
-        }
-      }; 
+      return { notFound: true };
     }
     
-    console.log('[getServerSideProps] Raw listingData.reviews:', (listingData as any).reviews);
-
     const typedListingData = listingData as (ListingBusiness & 
-      { imageUrls?: RawListingImage[]; reviews?: RawListingReviewData[] });
+      { 
+        imageUrls?: RawListingImage[]; 
+        reviews?: RawListingReviewData[]; 
+        categories?: { category: { category_name: string; slug: string; } | null }[];
+      });
 
     const serialized: SerializedPublicListing = serializeListing(typedListingData);
-    console.log('[getServerSideProps] Serialized listing.reviews:', serialized.reviews);
 
     return { 
       props: { 
@@ -278,7 +294,6 @@ export const getServerSideProps: GetServerSideProps<ListingPageProps> = async (c
 
 const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, requestedSlug }) => {
   const router = useRouter();
-  console.log('[ListingDetailPage] Received listing.reviews prop:', listing?.reviews);
 
   if (router.isFallback) {
     return <div>Loading...</div>; 
@@ -338,8 +353,9 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
             <Image
               src={listing.galleryImages[0].url}
               alt={`${listing.title} - Hero Image`}
-              layout="fill"
-              objectFit="cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
               priority 
             />
           </div>
@@ -362,7 +378,18 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
           {/* FAQ Placeholder */}
           <article className="bg-white shadow-md rounded-lg p-6">
             <h2 className="text-2xl font-semibold mb-3 text-black dark:text-black">Frequently Asked Questions</h2>
-            <p className="text-black dark:text-black">FAQ content will go here.</p> 
+            {listing.faq && listing.faq.length > 0 ? (
+              <div>
+                {listing.faq.map((faq, index) => (
+                  <div key={index} className="mb-4">
+                    <h3 className="text-lg font-bold text-black dark:text-black">{faq.question}</h3>
+                    <p className="text-black dark:text-black">{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-black dark:text-black">No FAQs available.</p>
+            )}
           </article>
 
           {/* Photo Gallery Section (Remaining Photos) */}
@@ -371,13 +398,13 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
               <h2 className="text-2xl font-semibold mb-3 text-black dark:text-black">Photo Gallery</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {listing.galleryImages.slice(1).map((image, index) => (
-                  <div key={image.url || index} className="overflow-hidden rounded-lg shadow aspect-w-16 aspect-h-9 bg-gray-100">
+                  <div key={image.url || index} className="overflow-hidden rounded-lg shadow aspect-w-16 aspect-h-9 bg-gray-100 relative">
                     <Image 
                       src={image.url} 
                       alt={image.description || `${listing.title} - Gallery Image ${index + 1}`}
-                      layout="fill"
-                      objectFit="cover"
-                      className="hover:opacity-75 transition-opacity duration-200"
+                      fill
+                      sizes="100vw" // Can be refined, e.g., (max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw
+                      className="object-cover hover:opacity-75 transition-opacity duration-200"
                     />
                   </div>
                 ))}
@@ -400,7 +427,18 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
         <aside className="w-full md:w-5/12 lg:w-4/12 flex flex-col gap-6 text-black dark:text-black">
           <div className="bg-white shadow-md rounded-lg p-6">
             <h2 className="text-2xl font-semibold mb-3 text-black dark:text-black">Business Info</h2>
-            {listing.category_name && <p className="mb-1"><strong className="text-black dark:text-black">Category:</strong> {listing.category_name}</p>}
+            {listing.category_name && listing.category_slug ? (
+              <p className="mb-1">
+                <strong className="text-black dark:text-black">Category: </strong>
+                <Link href={`/category/${listing.category_slug}`} legacyBehavior>
+                  <a className="text-blue-600 hover:text-blue-800 hover:underline">
+                    {listing.category_name}
+                  </a>
+                </Link>
+              </p>
+            ) : listing.category_name ? (
+              <p className="mb-1"><strong className="text-black dark:text-black">Category:</strong> {listing.category_name}</p>
+            ) : null}
             {listing.address && <p className="mb-1"><strong className="text-black dark:text-black">Address:</strong> {listing.address}</p>} 
             {listing.phone && <p className="mb-1"><strong className="text-black dark:text-black">Phone:</strong> {listing.phone}</p>}
             {/* City - Assuming address contains city, or you have a separate city field */}

@@ -59,9 +59,9 @@ const RecentListingsSection: React.FC<RecentListingsSectionProps> = ({ listings,
                     <Image 
                       src={listing.displayImageUrl} 
                       alt={listing.title || 'Listing image'}
-                      layout="fill"
-                      objectFit="cover"
-                      className="transition-transform duration-500 hover:scale-105"
+                      fill
+                      sizes="100vw" 
+                      className="object-cover transition-transform duration-500 hover:scale-105"
                     />
                   </div>
                 ) : (

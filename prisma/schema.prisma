@@ -73,6 +73,21 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// --- NEW MODEL FOR GUIDES ---
+model Guide {
+  id              String    @id @default(cuid()) // Unique ID for each guide
+  niche           String    // Stores the original niche, e.g., "Dentists in Australia"
+  topicIdea       String    // Stores the specific idea used, e.g., "Costs of Dental Implants"
+  title           String    // The final title (can be edited from topicIdea)
+  slug            String    @unique // A URL-friendly version of the title
+  content         String    @db.Text // The main article body - @db.Text allows for very long content
+  status          String    @default("draft") // e.g., "draft", "published", "archived"
+  openAIModel     String?   // Optional: Store which OpenAI model was used
+  generatedAt     DateTime  @default(now()) // When the content was first generated
+  createdAt       DateTime  @default(now()) // When the record was saved
+  updatedAt       DateTime  @updatedAt     // When the record was last updated
+}
+
 model OwnFAQ {
   id          String   @id @default(cuid())
   question    String
@@ -411,7 +426,39 @@ model OpeningHours {
   @@index([listing_id])
 }
 
-// Ownership Claim Model
+// Model for general site settings
+model SiteSettings {
+  id                   String    @id @default(cuid())
+  siteName             String    @default("Default Site Name")
+  tagline              String?   @default("Your default tagline here")
+  logoUrl              String?   @default("/logo.png")
+  faviconUrl           String?   @default("/favicon.ico")
+  contactEmail         String?   @default("contact@example.com")
+  contactPhone         String?   @default("123-456-7890")
+  address              String?   @default("123 Main St, Anytown, USA")
+  facebookUrl          String?
+  twitterUrl           String?
+  instagramUrl         String?
+  linkedinUrl          String?
+  youtubeUrl           String?
+  themeColor           String?   @default("#FFFFFF")
+  headerScripts        String?   @db.Text
+  footerScripts        String?   @db.Text
+  maintenanceMode      Boolean   @default(false)
+  seoTitle             String?   @default("Default SEO Title")
+  seoDescription       String?   @default("Default SEO Description")
+  seoKeywords          String?   @default("keyword1, keyword2, keyword3") // Comma-separated
+  googleAnalyticsId    String?
+  googleSiteVerificationId String?
+  bingSiteVerificationId String?
+  defaultUserRole      UserRole  @default(USER)
+  allowUserRegistration Boolean  @default(true)
+  defaultListingStatus String?   @default("PENDING") // Example: PENDING, ACTIVE
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+// Re-insert ClaimStatus enum and OwnershipClaim model here, in their original conceptual location
 enum ClaimStatus {
   PENDING
   APPROVED
@@ -440,27 +487,7 @@ model OwnershipClaim {
   @@index([status])
 }
 
-// Model for general site settings
-model SiteSettings {
-  id                   String    @id @default(cuid())
-  site_name            String?   // e.g., Your Awesome Website
-  site_tagline         String?   // e.g., The best place for X
-  logo_url             String?   // URL to the site logo
-  favicon_url          String?   // URL to the site favicon
-  contact_email        String?   // General contact email (might be different from admin_email for notifications)
-  admin_email          String?   // Email for receiving contact form submissions and admin notifications
-  contact_form_title   String?   // Title for the contact form page/section
-  contact_form_details String?   @db.Text // Additional details/text for the contact form page/section
-  footer_text          String?   @db.Text // Text for the site footer, e.g., copyright
-  maintenance_mode     Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  @@unique([id]) // Ensures there's effectively a single row if you manage settings this way.
-                 // Alternatively, use a fixed ID like 'main_settings' if you only ever want one row.
-}
-
-// Model for Contact Form Submissions
+// Contact Form Submissions
 model ContactMessage {
   id        String   @id @default(cuid())
   name      String
@@ -468,8 +495,28 @@ model ContactMessage {
   phone     String?
   subject   String?
   message   String   @db.Text
+  isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
-  status    String   @default("UNREAD") // e.g., UNREAD, READ, ARCHIVED
+  updatedAt DateTime @updatedAt
+}
+
+// Enum and Model for Prompt Vault
+enum PromptStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Prompt {
+  id            String       @id @default(cuid())
+  slug          String       @unique // e.g., "faq_generation_v1", "description_optimization_default"
+  name          String       // User-friendly name for the admin UI
+  description   String?      @db.Text // Optional detailed description of the prompt's purpose
+  promptText    String       @db.Text // The actual prompt template
+  version       Int          @default(1)
+  status        PromptStatus @default(ACTIVE)
+  placeholders  String[]     @default([]) // List of expected placeholders, e.g., ["business_info", "title"]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 // Models for Dynamic Menu Management

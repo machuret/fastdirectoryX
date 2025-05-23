@@ -1,7 +1,7 @@
 import { GetServerSideProps, NextPage } from 'next';
 import Head from 'next/head';
 import prisma from '@/lib/prisma';
-import { SiteSetting, PartnerLogo, ListingBusiness, ListingCategory, ListingImageUrl, ListingBusinessCategory } from '@prisma/client';
+import { Prisma, SiteSetting, PartnerLogo, ListingBusiness, ListingCategory, ListingImageUrl, ListingBusinessCategory } from '@prisma/client';
 import HeroSection from '@/components/landing/HeroSection';
 import PartnerCarousel from '@/components/landing/PartnerCarousel';
 import FeaturedListingsSection from '@/components/landing/FeaturedListingsSection';
@@ -97,7 +97,19 @@ interface HomePageProps {
   error?: string | null;
 }
 
-function serializeListingForHomePage(listing: ListingBusiness & { imageUrls?: ListingImageUrl[], categories: (ListingBusinessCategory & { category: ListingCategory })[] }): SerializedListing {
+// Define the type for listings as returned by Prisma with includes
+type ListingForHomePage = Prisma.ListingBusinessGetPayload<{
+  include: {
+    imageUrls: true; // True will fetch all, or specify select/take if needed. Prisma handles take:1 correctly.
+    categories: {
+      include: {
+        category: true;
+      };
+    };
+  };
+}>;
+
+function serializeListingForHomePage(listing: ListingForHomePage): SerializedListing {
   let displayImageUrl = listing.image_url || undefined;
   if (!displayImageUrl && listing.imageUrls && listing.imageUrls.length > 0) {
     const primaryImage = listing.imageUrls[0];
@@ -122,12 +134,12 @@ function serializeListingForHomePage(listing: ListingBusiness & { imageUrls?: Li
     website: listing.website,
     description: listing.description,
     displayImageUrl: displayImageUrl || null, 
-    imageUrls: listing.imageUrls?.map(img => ({ 
+    imageUrls: listing.imageUrls?.map((img: ListingImageUrl) => ({ 
       id: img.image_url_id.toString(), 
       url: img.url, 
       alt_text: img.description
     })),
-    categories: listing.categories.map(cb => ({
+    categories: listing.categories.map((cb: ListingBusinessCategory & { category: ListingCategory }) => ({
       category: {
         category_id: cb.category.category_id,
         category_name: cb.category.category_name,
@@ -156,6 +168,7 @@ const HomePage: NextPage<HomePageProps> = ({
   recentListings,
   error 
 }) => {
+  console.log('[HomePage RENDER] settings.seoTitle:', settings.seoTitle, 'TYPE:', typeof settings.seoTitle);
   if (error) {
     return (
       <>
@@ -270,60 +283,101 @@ const HomePage: NextPage<HomePageProps> = ({
 
 export const getServerSideProps: GetServerSideProps<HomePageProps> = async (context) => {
   console.log('[getServerSideProps] Starting...');
+
+  // Define default settings at the top of the try block or even outside if truly constant
+  const defaultHomePageSettings: HomePageSettings = {
+    heroEnabled: true,
+    heroTitle: 'Welcome to Our Directory!',
+    heroSubtitle: 'Find the best local businesses and services.',
+    heroCtaText: 'Explore Now',
+    heroCtaLink: '/listings',
+    heroImageUrl: '/images/placeholder-hero.jpg',
+    welcomeEnabled: true,
+    welcomeTitle: 'Discover Our Community',
+    welcomeContent: 'We are dedicated to connecting you with the best local resources and businesses. Explore what our community has to offer.',
+    welcomeImageUrl: '/images/placeholder-welcome.jpg',
+    welcomeImagePosition: 'right',
+    featuresEnabled: true,
+    featuresTitle: 'Why Choose Us?',
+    featuresItem1Title: 'Quality Listings',
+    featuresItem1Icon: 'Award',
+    featuresItem1Description: 'Curated and verified listings to ensure quality.',
+    featuresItem2Title: 'Easy to Use',
+    featuresItem2Icon: 'Navigation',
+    featuresItem2Description: 'Simple and intuitive interface for browsing.',
+    featuresItem3Title: 'Community Focused',
+    featuresItem3Icon: 'Users',
+    featuresItem3Description: 'Connecting local businesses with the community.',
+    carouselEnabled: true,
+    carouselTitle: 'Our Partners',
+    featuredListingsEnabled: true,
+    featuredListingsTitle: 'Featured Businesses',
+    featuredListingsMaxItems: 6,
+    categoriesSectionEnabled: true,
+    categoriesSectionTitle: 'Browse Categories',
+    categoriesMaxItems: 8,
+    recentListingsEnabled: true,
+    recentListingsTitle: 'Recently Added',
+    recentListingsMaxItems: 4,
+    ctaEnabled: true,
+    ctaTitle: 'Ready to Get Started?',
+    ctaSubtitle: 'Join our directory or find what you need today.',
+    ctaButtonText: 'Sign Up',
+    ctaButtonLink: '/register',
+    ctaBackgroundImageUrl: '/images/placeholder-cta-bg.jpg',
+    seoTitle: 'Homepage - Your Business Directory',
+    seoDescription: 'The official homepage for Your Business Directory.',
+    seoKeywords: 'business, directory, local, listings',
+  };
+
+  let settings = { ...defaultHomePageSettings }; // Initialize with defaults
+
   try {
     const siteSettingsFromDB = await prisma.siteSetting.findMany();
-    // Convert SiteSetting[] to a more usable HomePageSettings object
-    const transformedSettings = siteSettingsFromDB.reduce<HomePageSettings>((acc, setting) => {
-      const camelCaseKey = snakeToCamel(setting.key) as keyof HomePageSettings;
-      if (setting.value === 'true' || setting.value === 'false') {
-        (acc[camelCaseKey] as any) = setting.value === 'true';
-      } else if (!isNaN(Number(setting.value))) {
-        (acc[camelCaseKey] as any) = Number(setting.value);
-      } else {
-        (acc[camelCaseKey] as any) = setting.value;
-      }
-      return acc;
-    }, {});
+    
+    // Override defaults with database values
+    siteSettingsFromDB.forEach(dbSetting => {
+      const camelCaseKey = snakeToCamel(dbSetting.key) as keyof HomePageSettings;
+      let value: any = dbSetting.value;
 
-    console.log('[getServerSideProps] Transformed Settings:', JSON.stringify(transformedSettings, null, 2));
+      if (Object.prototype.hasOwnProperty.call(settings, camelCaseKey)) {
+        if (typeof (settings as any)[camelCaseKey] === 'boolean') {
+          value = dbSetting.value === 'true';
+        } else if (typeof (settings as any)[camelCaseKey] === 'number') {
+          value = Number(dbSetting.value);
+          if (isNaN(value)) value = (defaultHomePageSettings as any)[camelCaseKey]; // Fallback to default if NaN
+        }
+        (settings as any)[camelCaseKey] = value;
+      }
+    });
+
+    console.log('[getServerSideProps] Settings after DB override:', JSON.stringify(settings, null, 2));
 
     let partnerLogos: PartnerLogo[] = [];
-    // Use transformedSettings.carouselEnabled to decide whether to fetch logos
-    if (transformedSettings.carouselEnabled) {
+    if (settings.carouselEnabled) {
       try {
         partnerLogos = await prisma.partnerLogo.findMany({
-          where: { isVisible: true }, // Using isVisible based on previous diff
+          where: { isVisible: true },
           orderBy: { order: 'asc' },
         });
       } catch (error) {
         console.error("Error fetching partner logos:", error);
-        // partnerLogos remains empty
       }
     }
-
-    // Logging after attempting to fetch
-    console.log('[getServerSideProps] transformedSettings.carouselEnabled:', transformedSettings.carouselEnabled);
     console.log('[getServerSideProps] Fetched partnerLogos count:', partnerLogos.length);
-    if (partnerLogos.length > 0) {
-      console.log('[getServerSideProps] First partnerLogo details:', JSON.stringify(partnerLogos[0]));
-    }
 
-    // Explicitly type the result to help TypeScript with included relations
     const featuredListingsFromDB = await prisma.listingBusiness.findMany({
       where: { 
         isFeatured: true, 
-        permanently_closed: false, 
+        permanently_closed: false,
         temporarily_closed: false 
       }, 
       include: {
         imageUrls: { take: 1 }, 
         categories: { include: { category: true } },
       },
-      take: 10, 
-    }) as (ListingBusiness & {
-      imageUrls: ListingImageUrl[]; 
-      categories: (ListingBusinessCategory & { category: ListingCategory })[];
-    })[];
+      take: settings.featuredListingsMaxItems, // Use resolved setting
+    }); 
     const featuredListings = featuredListingsFromDB.map(serializeListingForHomePage);
 
     const categoriesFromDB = await prisma.listingCategory.findMany({
@@ -331,7 +385,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         _count: { select: { businesses: true } },
       },
       orderBy: { category_name: 'asc' },
-      take: 12, 
+      take: settings.categoriesMaxItems, 
     });
     const categories: SerializedCategory[] = categoriesFromDB.map(cat => ({
       category_id: cat.category_id,
@@ -340,7 +394,6 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
       _count: { businesses: cat._count.businesses },
     }));
 
-    // Explicitly type the result for recent listings as well
     const recentListingsFromDB = await prisma.listingBusiness.findMany({
       where: { 
         permanently_closed: false, 
@@ -351,84 +404,11 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         imageUrls: { take: 1 }, 
         categories: { include: { category: true } },
       },
-      take: 8, 
-    }) as (ListingBusiness & {
-      imageUrls: ListingImageUrl[];
-      categories: (ListingBusinessCategory & { category: ListingCategory })[];
-    })[];
+      take: settings.recentListingsMaxItems, // Use resolved setting
+    }); 
     const recentListings = recentListingsFromDB.map(serializeListingForHomePage);
 
-    const defaultHomePageSettings: HomePageSettings = {
-      heroEnabled: true,
-      heroTitle: 'Welcome to Our Directory!',
-      heroSubtitle: 'Find the best local businesses and services.',
-      heroCtaText: 'Explore Now',
-      heroCtaLink: '/listings',
-      heroImageUrl: '/images/placeholder-hero.jpg',
-      welcomeEnabled: true,
-      welcomeTitle: 'Discover Our Community',
-      welcomeContent: 'We are dedicated to connecting you with the best local resources and businesses. Explore what our community has to offer.',
-      welcomeImageUrl: '/images/placeholder-welcome.jpg',
-      welcomeImagePosition: 'right',
-      featuresEnabled: true,
-      featuresTitle: 'Why Choose Us?',
-      featuresItem1Title: 'Quality Listings',
-      featuresItem1Icon: 'Award',
-      featuresItem1Description: 'Curated and verified listings to ensure quality.',
-      featuresItem2Title: 'Easy to Use',
-      featuresItem2Icon: 'Navigation',
-      featuresItem2Description: 'Simple and intuitive interface for browsing.',
-      featuresItem3Title: 'Community Focused',
-      featuresItem3Icon: 'Users',
-      featuresItem3Description: 'Connecting local businesses with the community.',
-      carouselEnabled: true,
-      carouselTitle: 'Our Partners',
-      featuredListingsEnabled: true,
-      featuredListingsTitle: 'Featured Businesses',
-      featuredListingsMaxItems: 6,
-      categoriesSectionEnabled: true,
-      categoriesSectionTitle: 'Browse Categories',
-      categoriesMaxItems: 8,
-      recentListingsEnabled: true,
-      recentListingsTitle: 'Recently Added',
-      recentListingsMaxItems: 4,
-      ctaEnabled: true,
-      ctaTitle: 'Ready to Get Started?',
-      ctaSubtitle: 'Join our directory or find what you need today.',
-      ctaButtonText: 'Sign Up',
-      ctaButtonLink: '/register',
-      ctaBackgroundImageUrl: '/images/placeholder-cta-bg.jpg',
-      seoTitle: 'Homepage - Your Business Directory',
-      seoDescription: 'The official homepage for Your Business Directory.',
-      seoKeywords: 'business, directory, local, listings',
-    };
-
-    // Initialize settings with defaults
-    const settings = { ...defaultHomePageSettings };
-
-    // Override defaults with database values
-    siteSettingsFromDB.forEach(dbSetting => {
-      const camelCaseKey = snakeToCamel(dbSetting.key);
-      let value: any = dbSetting.value;
-
-      // Type conversion based on key naming convention or expected type
-      if (camelCaseKey.endsWith('Enabled') || camelCaseKey.endsWith('Published')) {
-        value = value === 'true' || value === true;
-      } else if (camelCaseKey.endsWith('MaxItems')) {
-        const numValue = parseInt(value, 10);
-        value = isNaN(numValue) ? null : numValue;
-      } else if (camelCaseKey.startsWith('featuresItem') && camelCaseKey.endsWith('Icon')) {
-        // Ensure icon value is a valid keyof LucideIcons or null
-        value = Object.keys(LucideIcons).includes(value) ? value as keyof typeof LucideIcons : null;
-      }
-      // Only set property if it exists on HomePageSettings (based on defaultHomePageSettings keys)
-      if (Object.prototype.hasOwnProperty.call(defaultHomePageSettings, camelCaseKey)) {
-        (settings as any)[camelCaseKey] = value ?? null; // Use nullish coalescing for undefined/null from DB
-      }
-    });
-
-    console.log('[getServerSideProps] Final settings.heroTitle for props:', settings.heroTitle);
-    console.log('[getServerSideProps] Final settings.featuresItem1Icon for props:', settings.featuresItem1Icon);
+    console.log('[getServerSideProps] FINAL settings.seoTitle:', settings.seoTitle, 'TYPE:', typeof settings.seoTitle);
 
     return {
       props: {
@@ -441,15 +421,17 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
     };
   } catch (error) {
     console.error('[getServerSideProps] Error fetching homepage data:', error);
-    // It's good practice to provide some default settings even in case of error
-    // to prevent the page from completely breaking if some props are expected.
-    const minimalDefaultSettings: HomePageSettings = {
-      heroEnabled: true,
+    // In case of error, settings might not be fully populated from DB, 
+    // but it would have defaultHomePageSettings values.
+    // We can choose to return the partially updated 'settings' or stick to 'defaultHomePageSettings'
+    // For safety, let's ensure minimal defaults are used if specific settings are critical for error page rendering.
+    const errorPageSettings: HomePageSettings = {
+      ...defaultHomePageSettings, // Start with all defaults
+      heroEnabled: true, // Override specific fields for error display
       heroTitle: 'Error Loading Content',
       heroSubtitle: 'Please try again later.',
       seoTitle: 'Error',
       seoDescription: 'Could not load page content.',
-      // Add other essential defaults if necessary
       welcomeEnabled: false,
       featuresEnabled: false,
       carouselEnabled: false,
@@ -460,7 +442,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
     };
     return {
       props: {
-        settings: minimalDefaultSettings,
+        settings: errorPageSettings, // Use the specially crafted error settings
         partnerLogos: [],
         featuredListings: [],
         categories: [],

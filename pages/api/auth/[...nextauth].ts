@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import type { Adapter } from 'next-auth/adapters';
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+  // adapter: PrismaAdapter(prisma) as Adapter, // Temporarily commented out
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -87,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.status = user.status; // Assign directly, types should match JWT interface in next-auth.d.ts
         token.role = user.role;     // Assign directly, types should match JWT interface in next-auth.d.ts
+        token.email = user.email;   // Assign directly, types should match JWT interface in next-auth.d.ts
       }
       return token;
     },
@@ -95,6 +96,7 @@ export const authOptions: NextAuthOptions = {
       // The persistent errors on these lines indicate session.user is not being seen as augmented.
       if (session.user) { 
         session.user.id = token.id as string;
+        session.user.email = token.email as string;
         session.user.role = token.role; 
         session.user.status = token.status; 
         session.user.isAdmin = token.role === 'ADMIN'; 

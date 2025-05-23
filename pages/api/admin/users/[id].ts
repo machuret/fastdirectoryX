@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]'; // Adjusted path
 import { UserRole, UserStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs'; // Ensure bcryptjs is imported
 
 /**
  * API handler for managing individual user resources.
@@ -29,6 +30,7 @@ import { UserRole, UserStatus } from '@prisma/client';
  * @bodyParam {string} [email] - The new email address of the user (must be unique).
  * @bodyParam {UserRole} [role] - The new role of the user.
  * @bodyParam {UserStatus} [status] - The new status of the user.
+ * @bodyParam {string} [password] - The new password of the user (must be at least 6 characters long).
  * @returns {Promise<void>} Responds with the updated user object or an error message.
  * @successResponse 200 OK - {User} The updated user object (password excluded, user_id mapped to id).
  * @errorResponse 400 Bad Request - If no update fields are provided, ID is invalid, or admin tries to demote/suspend self.
@@ -97,18 +99,32 @@ export default async function handler(
 
     case 'PUT':
       try {
-        const { name, email, role, status } = req.body;
+        const { name, email, role, status, password } = req.body;
         
-        // Basic validation
-        if (!name && !email && !role && !status) {
+        // Basic validation: Check if at least one field to update is provided
+        if (!name && !email && !role && !status && !password) {
             return res.status(400).json({ message: 'No update fields provided.' });
         }
 
-        const updateData: { name?: string; email?: string; role?: UserRole; status?: UserStatus } = {};
+        const updateData: { 
+            name?: string; 
+            email?: string; 
+            role?: UserRole; 
+            status?: UserStatus; 
+            password?: string; // For hashed password
+        } = {};
+
         if (name) updateData.name = name;
         if (email) updateData.email = email; // Consider validating email format
         if (role && Object.values(UserRole).includes(role)) updateData.role = role;
         if (status && Object.values(UserStatus).includes(status)) updateData.status = status;
+
+        if (password) {
+          if (typeof password !== 'string' || password.length < 6) {
+            return res.status(400).json({ message: 'New password must be at least 6 characters long' });
+          }
+          updateData.password = await bcrypt.hash(password, 10);
+        }
 
         // Prevent admin from demoting/suspending themselves via this specific endpoint if it's their own ID
         // @ts-ignore
@@ -126,7 +142,7 @@ export default async function handler(
           data: updateData,
           select: { // Exclude password, use correct field names
             user_id: true, name: true, email: true, role: true, status: true, 
-            createdAt: true, updatedAt: true
+            createdAt: true, updatedAt: true, image: true, emailVerified: true
           }
         });
         // Map user_id to id for the response

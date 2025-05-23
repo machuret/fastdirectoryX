@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Loader2, Save, Edit3, UserX } from 'lucide-react'; // Added Edit3, UserX
+import { ArrowLeft, Loader2, Save, Edit3, UserX } from 'lucide-react'; 
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -13,58 +13,91 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import { UserRole, UserStatus } from '@prisma/client'; 
 
-// Enums (ensure these match your Prisma schema and backend API expectations)
-const UserRole = {
-  ADMIN: 'ADMIN',
-  USER: 'USER',
-  EDITOR: 'EDITOR',
-} as const;
-
-const UserStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
-  SUSPENDED: 'SUSPENDED',
-  PENDING: 'PENDING', // If applicable
-} as const;
-
-type UserRoleType = typeof UserRole[keyof typeof UserRole];
-type UserStatusType = typeof UserStatus[keyof typeof UserStatus];
-
-// Schema for editing a user
+/**
+ * Zod schema for validating the user edit form data.
+ * All fields are optional. Password and confirmPassword are validated together if password is provided.
+ */
 const editUserFormSchema = z.object({
   name: z.string().min(3, { message: "Full name must be at least 3 characters." }).optional(),
   email: z.string().email({ message: "Please enter a valid email address." }).optional(),
   role: z.nativeEnum(UserRole).optional(),
   status: z.nativeEnum(UserStatus).optional(),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }).optional().or(z.literal('')), 
+  confirmPassword: z.string().optional().or(z.literal('')), 
+}).refine((data) => {
+  if (data.password && data.password.length > 0) { 
+    return data.password === data.confirmPassword;
+  }
+  return true; 
+}, {
+  message: "Passwords do not match.",
+  path: ["confirmPassword"],
 });
 
+/**
+ * Type representing the validated values from the edit user form.
+ * Inferred from the editUserFormSchema.
+ */
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
 
-interface UserData {
-  user_id: string;
+/**
+ * Interface representing the user data structure received from the API.
+ * Dates are expected to be serialized as strings.
+ */
+interface UserDataFromAPI { 
+  id: number;
   name: string | null;
-  email: string | null;
-  role: UserRoleType;
-  status: UserStatusType;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  image: string | null;
+  emailVerified: string | null; 
+  createdAt: string; 
+  updatedAt: string; 
 }
 
+/**
+ * AdminEditUserPage component for editing an existing user's details.
+ * Fetches user data based on ID from URL, pre-populates a form, and allows updates.
+ * Includes functionality to change the user's password.
+ * Submits data to the PUT /api/admin/users/[id] endpoint.
+ */
 const AdminEditUserPage = () => {
   const router = useRouter();
-  const { id: userId } = router.query; // Get user ID from URL
+  /** @state {string | string[] | undefined} userId - The ID of the user being edited, from URL query. */
+  const { id: userId } = router.query; 
 
+  /** @state {boolean} isLoading - Indicates if a form submission (update) is in progress. */
   const [isLoading, setIsLoading] = useState(false);
+  /** @state {boolean} isFetching - Indicates if the initial user data fetch is in progress. */
   const [isFetching, setIsFetching] = useState(true);
-  const [user, setUser] = useState<UserData | null>(null);
+  /** @state {UserDataFromAPI | null} user - Stores the fetched user data. */
+  const [user, setUser] = useState<UserDataFromAPI | null>(null); 
 
+  /**
+   * React Hook Form instance for managing the edit user form.
+   * Uses Zod for schema validation and sets default values.
+   * Form values are reset after initial data fetch and after successful updates.
+   */
   const form = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
     defaultValues: {
       name: '',
       email: '',
+      password: '',
+      confirmPassword: '',
+      // role and status will be set by form.reset after fetch
     },
   });
 
+  /**
+   * Effect hook to fetch user data when the component mounts or the userId changes.
+   * Sets fetching state, calls the GET /api/admin/users/[id] API endpoint.
+   * On success, updates user state and resets the form with fetched data.
+   * On failure, shows an error toast.
+   */
   useEffect(() => {
     if (userId && typeof userId === 'string') {
       setIsFetching(true);
@@ -75,13 +108,15 @@ const AdminEditUserPage = () => {
             const errorData = await response.json();
             throw new Error(errorData.message || `Error: ${response.status}`);
           }
-          const data: UserData = await response.json();
+          const data: UserDataFromAPI = await response.json(); 
           setUser(data);
           form.reset({
             name: data.name || '',
-            email: data.email || '',
+            email: data.email || '', 
             role: data.role,
             status: data.status,
+            password: '', 
+            confirmPassword: '',
           });
         } catch (error: any) {
           console.error("Failed to fetch user data:", error);
@@ -92,8 +127,16 @@ const AdminEditUserPage = () => {
       };
       fetchUserData();
     }
-  }, [userId, form, router]);
+  }, [userId, form, router]); // Added router to dependencies as it's used for potential navigation on error, though not explicitly here.
 
+  /**
+   * Handles the submission of the edit user form.
+   * Validates user ID, sets loading state, and sends a PUT request to the API with changed data.
+   * Only sends fields that have been modified or if a new password is set.
+   * On success, displays a toast notification and resets the form with updated data.
+   * On failure, shows an error toast.
+   * @param {EditUserFormValues} data - The validated form data.
+   */
   async function onSubmit(data: EditUserFormValues) {
     if (!userId || typeof userId !== 'string') {
       toast.error("User ID is missing or invalid.");
@@ -102,11 +145,24 @@ const AdminEditUserPage = () => {
     setIsLoading(true);
     try {
       const changedData = Object.fromEntries(
-        Object.entries(data).filter(([_, v]) => v !== undefined)
+        Object.entries(data).filter(([key, v]) => {
+          if (key === 'password' || key === 'confirmPassword') {
+            return typeof v === 'string' && v.length > 0;
+          }
+          return form.formState.dirtyFields[key as keyof EditUserFormValues];
+        })
       );
 
+      if ('confirmPassword' in changedData) {
+        delete changedData.confirmPassword;
+      }
+
+      if (changedData.password === '') {
+        delete changedData.password;
+      }
+
       if (Object.keys(changedData).length === 0) {
-        toast.info("No changes detected.");
+        toast.info("No changes detected to save.");
         setIsLoading(false);
         return;
       }
@@ -121,9 +177,18 @@ const AdminEditUserPage = () => {
         const errorData = await response.json();
         throw new Error(errorData.message || `Error: ${response.status}`);
       }
-      const updatedUser = await response.json();
+      const updatedUser: UserDataFromAPI = await response.json();
       toast.success(`User "${updatedUser.name || 'User'}" updated successfully!`);
-      form.reset(updatedUser); 
+      form.reset({
+        ...form.getValues(), 
+        name: updatedUser.name || '',
+        email: updatedUser.email || '',
+        role: updatedUser.role,
+        status: updatedUser.status,
+        password: '', 
+        confirmPassword: '',
+      });
+      setUser(updatedUser); 
     } catch (error: any) {
       console.error("Failed to update user:", error);
       toast.error(error.message || "An unexpected error occurred.");
@@ -227,7 +292,7 @@ const AdminEditUserPage = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value as UserRoleType} disabled={isLoading}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value as UserRole} disabled={isLoading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a role" />
@@ -251,7 +316,7 @@ const AdminEditUserPage = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value as UserStatusType} disabled={isLoading}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value as UserStatus} disabled={isLoading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a status" />
@@ -270,6 +335,32 @@ const AdminEditUserPage = () => {
                   )}
                 />
               </div>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Enter new password" {...field} disabled={isLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Confirm new password" {...field} disabled={isLoading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
         </form>

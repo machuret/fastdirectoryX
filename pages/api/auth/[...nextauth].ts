@@ -1,9 +1,21 @@
-import NextAuth, { type NextAuthOptions } from 'next-auth';
+import NextAuth, { NextAuthOptions, User as NextAuthUser, Session as NextAuthSession } from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import prisma from '@/lib/prisma'; // Assuming prisma client is exported from here
+import prisma from '@/lib/prisma'; 
 import bcrypt from 'bcryptjs';
 import type { Adapter } from 'next-auth/adapters';
+import { JWT } from 'next-auth/jwt'; 
+import { UserRole, UserStatus } from '@prisma/client'; // Import Prisma enums
+
+// Define a type for the user object returned by the authorize callback
+interface AuthorizeUser { // This should precisely match the object returned by your authorize function
+  id: string;
+  name?: string | null; // authorize returns name
+  email?: string | null; // authorize returns email
+  image?: string | null; // authorize returns image
+  status: UserStatus; // authorize returns status (UserStatus enum)
+  role: UserRole;   // authorize returns role (UserRole enum)
+}
 
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma) as Adapter, // Temporarily commented out
@@ -81,25 +93,30 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user }) { 
-      // 'user' object comes from 'authorize' and now has conforming status and role
+    async jwt({ token, user }: { token: JWT; user?: AuthorizeUser }) { 
       if (user) {
         token.id = user.id;
-        token.status = user.status; // Assign directly, types should match JWT interface in next-auth.d.ts
-        token.role = user.role;     // Assign directly, types should match JWT interface in next-auth.d.ts
-        token.email = user.email;   // Assign directly, types should match JWT interface in next-auth.d.ts
+        token.name = user.name; // Pass name to token
+        token.email = user.email; // Pass email to token
+        token.image = user.image; // Pass image to token
+        token.status = user.status; // Now UserStatus from AuthorizeUser
+        token.role = user.role;     // Now UserRole from AuthorizeUser
       }
       return token;
     },
-    async session({ session, token }) {
-      // If next-auth.d.ts is correctly augmenting Session, these assignments should be type-safe.
-      // The persistent errors on these lines indicate session.user is not being seen as augmented.
+    async session({ session, token }: { session: NextAuthSession; token: JWT }) {
       if (session.user) { 
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.role = token.role; 
-        session.user.status = token.status; 
-        session.user.isAdmin = token.role === 'ADMIN'; 
+        // Assign from token to session.user, types should align with next-auth.d.ts
+        session.user.id = token.id as string; // JWT 'id' is string | undefined from our types
+        // session.user.name = token.name; // DefaultSession user has name, JWT has name
+        // session.user.email = token.email; // DefaultSession user has email, JWT has email
+        // session.user.image = token.image; // DefaultSession user has image, JWT has image
+        
+        // Custom properties from JWT (populated from AuthorizeUser)
+        // These should align with the Session['user'] augmentation in next-auth.d.ts
+        if (token.role) session.user.role = token.role as UserRole; // token.role is UserRole | undefined
+        if (token.status) session.user.status = token.status as UserStatus; // token.status is UserStatus | undefined
+        session.user.isAdmin = token.role === UserRole.ADMIN; 
       }
       return session;
     },

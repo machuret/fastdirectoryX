@@ -428,34 +428,13 @@ model OpeningHours {
 
 // Model for general site settings
 model SiteSettings {
-  id                       String   @id @default(cuid())
-  siteName                 String   @default("Default Site Name")
-  tagline                  String?  @default("Your default tagline here")
-  logoUrl                  String?  @default("/logo.png")
-  faviconUrl               String?  @default("/favicon.ico")
-  contactEmail             String?  @default("contact@example.com")
-  contactPhone             String?  @default("123-456-7890")
-  address                  String?  @default("123 Main St, Anytown, USA")
-  facebookUrl              String?
-  twitterUrl               String?
-  instagramUrl             String?
-  linkedinUrl              String?
-  youtubeUrl               String?
-  themeColor               String?  @default("#FFFFFF")
-  headerScripts            String?  @db.Text
-  footerScripts            String?  @db.Text
-  maintenanceMode          Boolean  @default(false)
-  seoTitle                 String?  @default("Default SEO Title")
-  seoDescription           String?  @default("Default SEO Description")
-  seoKeywords              String?  @default("keyword1, keyword2, keyword3") // Comma-separated
-  googleAnalyticsId        String?
-  googleSiteVerificationId String?
-  bingSiteVerificationId   String?
-  defaultUserRole          UserRole @default(USER)
-  allowUserRegistration    Boolean  @default(true)
-  defaultListingStatus     String?  @default("PENDING") // Example: PENDING, ACTIVE
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  id                 String    @id @default(cuid()) // Unique ID for the settings record
+  siteName           String?   // General name for the site
+  adminEmail         String?   // Email for admin notifications, contact form submissions
+  contactFormTitle   String?   // Title displayed on the contact form
+  contactFormDetails String?   // Explanatory text for the contact form
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 // Model for the Prompt Vault feature

@@ -56,7 +56,7 @@ interface FetchUsersResponse {
  */
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<FetchUsersResponse | { message: string }>
+  res: NextApiResponse<FetchUsersResponse | { message: string, userId?: number }>
 ) {
   const session = await getServerSession(req, res, authOptions);
 
@@ -172,7 +172,7 @@ export default async function handler(
           }
         });
 
-        return res.status(201).json(newUser);
+        return res.status(201).json({ message: 'User created successfully', userId: newUser.user_id });
       } catch (error) {
         console.error('Error creating user:', error);
         // Consider more specific error handling, e.g., for Prisma validation errors

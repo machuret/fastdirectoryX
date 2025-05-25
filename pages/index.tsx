@@ -1,5 +1,6 @@
 import { GetServerSideProps, NextPage } from 'next';
 import Head from 'next/head';
+import { useState, useMemo } from 'react';
 import prisma from '@/lib/prisma';
 import { Prisma, SiteSetting, PartnerLogo, ListingBusiness, ListingCategory, ListingImageUrl, ListingBusinessCategory } from '@prisma/client';
 import HeroSection from '@/components/landing/HeroSection';
@@ -93,7 +94,7 @@ interface HomePageProps {
   partnerLogos: PartnerLogo[];
   featuredListings: SerializedListing[];
   categories: SerializedCategory[];
-  recentListings: SerializedListing[];
+  listingsForFilterableSection: SerializedListing[];
   error?: string | null;
 }
 
@@ -165,10 +166,35 @@ const HomePage: NextPage<HomePageProps> = ({
   partnerLogos,
   featuredListings,
   categories,
-  recentListings,
+  listingsForFilterableSection,
   error 
 }) => {
   console.log('[HomePage RENDER] settings.seoTitle:', settings.seoTitle, 'TYPE:', typeof settings.seoTitle);
+
+  const [sortKey, setSortKey] = useState<'latest' | 'featured' | 'alphabetical'>('latest');
+
+  const displayedListings = useMemo(() => {
+    if (!listingsForFilterableSection) return [];
+    let result = [...listingsForFilterableSection]; // Use the new prop
+
+    switch (sortKey) {
+      case 'featured':
+        result = result.filter(listing => listing.isFeatured);
+        // Sort featured items by date as well, most recent first
+        result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        break;
+      case 'latest':
+        result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        break;
+      case 'alphabetical':
+        result.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      default:
+        break;
+    }
+    return result;
+  }, [listingsForFilterableSection, sortKey]);
+
   if (error) {
     return (
       <>
@@ -260,11 +286,15 @@ const HomePage: NextPage<HomePageProps> = ({
       
       {/* --- Recent Listings Section --- */}
       {/* Displays the most recently added business listings. */}
-      <RecentListingsSection 
-        listings={recentListings} 
-        isEnabled={settings.recentListingsEnabled ?? false} 
-        title={settings.recentListingsTitle}
-      />
+      {settings.recentListingsEnabled && listingsForFilterableSection && (
+        <RecentListingsSection 
+          listings={displayedListings} 
+          isEnabled={settings.recentListingsEnabled ?? false} 
+          title={settings.recentListingsTitle}
+          currentSortKey={sortKey}
+          onSortKeyChange={setSortKey} // Pass setter to allow child component to change sort
+        />
+      )}
       
       {/* --- Call To Action Section --- */}
       {/* A section designed to encourage a specific user action, like signing up or exploring further. */}
@@ -366,19 +396,27 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
     }
     console.log('[getServerSideProps] Fetched partnerLogos count:', partnerLogos.length);
 
-    const featuredListingsFromDB = await prisma.listingBusiness.findMany({
-      where: { 
-        isFeatured: true, 
-        permanently_closed: false,
-        temporarily_closed: false 
-      }, 
-      include: {
-        imageUrls: { take: 1 }, 
-        categories: { include: { category: true } },
-      },
-      take: settings.featuredListingsMaxItems, // Use resolved setting
-    }); 
-    const featuredListings = featuredListingsFromDB.map(serializeListingForHomePage);
+    let featuredListings: SerializedListing[] = [];
+    if (settings.featuredListingsEnabled) {
+      const featuredListingsData: ListingForHomePage[] = await prisma.listingBusiness.findMany({
+        where: {
+          isFeatured: true,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+        take: settings.featuredListingsMaxItems || 3,
+        include: {
+          imageUrls: { take: 1, orderBy: { created_at: 'asc' } },
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
+      featuredListings = featuredListingsData.map(serializeListingForHomePage);
+    }
 
     const categoriesFromDB = await prisma.listingCategory.findMany({
       include: {
@@ -394,19 +432,25 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
       _count: { businesses: cat._count.businesses },
     }));
 
-    const recentListingsFromDB = await prisma.listingBusiness.findMany({
-      where: { 
-        permanently_closed: false, 
-        temporarily_closed: false 
-      }, 
-      orderBy: { createdAt: 'desc' }, 
-      include: {
-        imageUrls: { take: 1 }, 
-        categories: { include: { category: true } },
-      },
-      take: settings.recentListingsMaxItems, // Use resolved setting
-    }); 
-    const recentListings = recentListingsFromDB.map(serializeListingForHomePage);
+    // Fetch a general list of listings for the filterable section
+    let listingsForFilterableSection: SerializedListing[] = [];
+    if (settings.recentListingsEnabled) { // Use existing setting to control this section
+      const listingsData: ListingForHomePage[] = await prisma.listingBusiness.findMany({
+        orderBy: {
+          updatedAt: 'desc', // Default sort for initial fetch
+        },
+        take: 50, // Fetch a larger number for client-side filtering/sorting
+        include: {
+          imageUrls: { take: 1, orderBy: { created_at: 'asc' } },
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
+      listingsForFilterableSection = listingsData.map(serializeListingForHomePage);
+    }
 
     console.log('[getServerSideProps] FINAL settings.seoTitle:', settings.seoTitle, 'TYPE:', typeof settings.seoTitle);
 
@@ -416,7 +460,8 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         partnerLogos,
         featuredListings,
         categories,
-        recentListings,
+        listingsForFilterableSection,
+        error: null,
       },
     };
   } catch (error) {
@@ -446,7 +491,7 @@ export const getServerSideProps: GetServerSideProps<HomePageProps> = async (cont
         partnerLogos: [],
         featuredListings: [],
         categories: [],
-        recentListings: [],
+        listingsForFilterableSection: [],
         error: error instanceof Error ? error.message : 'An unknown error occurred',
       },
     };

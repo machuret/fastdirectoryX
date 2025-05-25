@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ menuItems }) => {
   };
 
   return (
-    <header className="bg-gray-800 text-white p-4">
+    <header className="bg-header-bg text-header-font p-4">
       <nav className="container mx-auto flex justify-between items-center">
         <Link href="/" className="text-xl font-bold">
           YourLogo

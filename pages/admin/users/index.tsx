@@ -138,7 +138,11 @@ const AdminUsersPage = () => {
    * @param {string} value - The selected role value.
    */
   const handleRoleFilterChange = (value: string) => {
-    setRoleFilter(value as UserRole | '');
+    if (value === "ALL_ROLES_OPTION") {
+      setRoleFilter('');
+    } else {
+      setRoleFilter(value as UserRole | '');
+    }
     setCurrentPage(1);
   };
 
@@ -149,7 +153,11 @@ const AdminUsersPage = () => {
    * @param {string} value - The selected status value.
    */
   const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value as UserStatus | '');
+    if (value === "ALL_STATUSES_OPTION") {
+      setStatusFilter('');
+    } else {
+      setStatusFilter(value as UserStatus | '');
+    }
     setCurrentPage(1);
   };
   
@@ -237,7 +245,7 @@ const AdminUsersPage = () => {
               <SelectValue placeholder="Filter by role" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Roles</SelectItem>
+              <SelectItem value="ALL_ROLES_OPTION">All Roles</SelectItem>
               {Object.values(UserRole).map(role => (
                 <SelectItem key={role} value={role}>{role}</SelectItem>
               ))}
@@ -249,7 +257,7 @@ const AdminUsersPage = () => {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="ALL_STATUSES_OPTION">All Statuses</SelectItem>
               {Object.values(UserStatus).map(status => (
                 <SelectItem key={status} value={status}>{status}</SelectItem>
               ))}
@@ -329,6 +337,11 @@ const AdminUsersPage = () => {
       </div>
     </AdminLayout>
   );
+};
+
+// Add the getLayout function here to specify that this page handles its own layout
+AdminUsersPage.getLayout = function getLayout(page: React.ReactElement) {
+  return page;
 };
 
 export default AdminUsersPage;

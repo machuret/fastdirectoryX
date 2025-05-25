@@ -15,6 +15,7 @@ import {
   Archive, // Added Archive icon for Prompt Vault
   Activity, // Added Activity icon for AI Check
   Sparkles, // Added Sparkles icon for AI Content
+  Palette, // Added Palette icon for Customize
 } from 'lucide-react'; 
 
 interface AdminLayoutProps {
@@ -50,6 +51,7 @@ const settingsNavItems = [
   { name: 'Homepage Settings', path: '/admin/settings/homepage', icon: Settings },
   { name: 'User Management', path: '/admin/users', icon: Users },
   { name: 'Contact Form', path: '/admin/settings/contactform', icon: FileText }, // Added Contact Form link
+  { name: 'Customize', path: '/admin/customize', icon: Palette }, // Added Customize link
   { name: 'Prompt Vault', path: '/admin/promptvault', icon: Archive },
   { name: 'AI Check', path: '/admin/apicheck', icon: Activity },
 ];

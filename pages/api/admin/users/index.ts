@@ -5,6 +5,26 @@ import { authOptions } from '@/pages/api/auth/[...nextauth]'; // Adjusted path
 import bcrypt from 'bcryptjs';
 import { UserRole, UserStatus } from '@prisma/client'; // Import enums
 
+// Define types for the API response and user data structure
+interface UserForAdminDisplay {
+  id: number;
+  name: string | null;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  image: string | null;
+  emailVerified: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface FetchUsersResponse {
+  users: UserForAdminDisplay[];
+  totalPages: number;
+  currentPage: number;
+  totalUsers: number;
+}
+
 /**
  * API handler for managing user collections.
  * Supports fetching all users (GET) and creating new users (POST).
@@ -36,7 +56,7 @@ import { UserRole, UserStatus } from '@prisma/client'; // Import enums
  */
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<FetchUsersResponse | { message: string }>
 ) {
   const session = await getServerSession(req, res, authOptions);
 
@@ -94,7 +114,7 @@ export default async function handler(
         });
 
         // Map users to match UserForAdminDisplay structure
-        const users = usersFromDB.map(user => ({
+        const users: UserForAdminDisplay[] = usersFromDB.map(user => ({
           id: user.user_id,
           name: user.name,
           email: user.email,

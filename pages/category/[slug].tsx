@@ -94,7 +94,10 @@ const CategoryPage: NextPageWithLayout<CategoryPageProps> = ({ category, listing
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold mb-2 text-center font-raleway tracking-tight text-text-primary">{category.category_name}</h1>
         {category.description && <p className="text-lg text-text-secondary text-center mb-10">{category.description}</p>}
-
+        <>
+          <br />
+          <br />
+        </>
         {listings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {listings.map((listing) => (

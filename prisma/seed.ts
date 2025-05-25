@@ -1,9 +1,29 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, UserRole, UserStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log(`Start seeding ...`);
+
+  // Ensure an Admin User exists
+  const adminEmail = 'admin@example.com';
+  const adminPassword = 'password123'; // Choose a secure password
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { role: UserRole.ADMIN }, // Ensure role is ADMIN if user exists
+    create: {
+      email: adminEmail,
+      name: 'Admin User',
+      password: hashedPassword,
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      emailVerified: new Date(), // Mark email as verified for simplicity in seeding
+    },
+  });
+  console.log(`Upserted admin user with ID: ${adminUser.user_id} and email: ${adminUser.email}`);
 
   // --- Seed Categories ---
   const categoriesData: Prisma.ListingCategoryCreateInput[] = [
@@ -103,11 +123,13 @@ async function main() {
     }
   ];
 
+  const placeholderUserId = adminUser.user_id; // Use the ID of the upserted admin user
+
+  /*
+  // Temporarily commented out due to unique slug constraint error on ListingBusiness
+  // User needs to fix this data or logic later.
   for (let i = 0; i < businessesData.length; i++) {
     const bizData = businessesData[i];
-
-    // Placeholder user_id. In a real scenario, fetch or create a user.
-    const placeholderUserId = 1; 
 
     // 1. Create the core Business record
     const coreBusiness = await prisma.business.create({
@@ -146,13 +168,54 @@ async function main() {
     });
     console.log(`Created listing business with id: ${listingBusiness.listing_business_id} - ${listingBusiness.title}`);
   }
+  */
+
+  // --- Seed Prompt Templates --- (Assuming this is for the Prompt Vault)
+  console.log('Seeding Prompts for Prompt Vault...');
+  const promptsToSeed: Prisma.PromptTemplateCreateInput[] = [
+    {
+      name: 'Description',
+      slug: 'description',
+      content: 'Generate a compelling business description based on the following keywords: [Keywords]. Highlight unique selling points such as [USP1] and [USP2]. The target audience is [Audience]. The tone should be [Tone].',
+    },
+    {
+      name: 'Guides',
+      slug: 'guides', 
+      content: 'Create a step-by-step guide for [Task/Process]. The guide should be easy to follow for a beginner. Include tips for [Tip1] and common pitfalls to avoid like [Pitfall1].',
+    },
+    {
+      name: 'FAQ',
+      slug: 'faq',
+      content: 'Develop a list of frequently asked questions (FAQs) and their answers for a [Product/Service/Topic]. Cover at least 5 common questions, including [Question1Example] and [Question2Example].',
+    },
+    {
+      name: 'WebFAQ',
+      slug: 'web-faq', 
+      content: 'Generate a set of FAQs specifically for a website that [WebsitePurpose/Features]. Include questions about navigation, user accounts, and troubleshooting common issues like [IssueExample].',
+    },
+    {
+      name: 'Cities',
+      slug: 'cities', 
+      content: 'Write a short, engaging overview of the city of [CityName]. Mention its famous landmarks like [Landmark1], cultural aspects such as [Culture1], and hidden gems like [HiddenGem1].',
+    },
+  ];
+
+  for (const promptData of promptsToSeed) {
+    const promptEntry = await prisma.promptTemplate.upsert({
+      where: { slug: promptData.slug },
+      update: { content: promptData.content, name: promptData.name }, 
+      create: promptData,
+    });
+    console.log(`Created or updated Prompt Vault entry with id: ${promptEntry.id} - ${promptEntry.name}`);
+  }
 
   console.log(`Seeding finished.`);
 }
 
 main()
-  .catch((e) => {
+  .catch(async (e) => {
     console.error(e);
+    await prisma.$disconnect();
     process.exit(1);
   })
   .finally(async () => {

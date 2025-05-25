@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
   "dependencies": {
     "@azure/storage-blob": "^12.27.0",
     "@hookform/resolvers": "^5.0.1",
@@ -53,6 +56,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.56.4",
     "react-icons": "^5.5.0",
+    "react-toastify": "^11.0.5",
     "slugify": "^1.6.6",
     "sonner": "^2.0.3",
     "swr": "^2.3.3",
@@ -68,6 +72,7 @@
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@types/react-toastify": "^4.0.2",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.57.0",

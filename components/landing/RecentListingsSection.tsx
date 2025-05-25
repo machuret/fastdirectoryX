@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,8 @@ interface RecentListingsSectionProps {
   listings: SerializedListing[];
   isEnabled: boolean;
   title?: string | null;
+  currentSortKey: 'latest' | 'featured' | 'alphabetical';
+  onSortKeyChange: Dispatch<SetStateAction<'latest' | 'featured' | 'alphabetical'>>;
 }
 
 interface ClientFormattedDateProps {
@@ -39,17 +41,49 @@ const ClientFormattedDate: React.FC<ClientFormattedDateProps> = ({ isoDateString
   return <>{formattedDate}</>;
 };
 
-const RecentListingsSection: React.FC<RecentListingsSectionProps> = ({ listings, isEnabled, title }) => {
-  if (!isEnabled || !listings || listings.length === 0) {
+const RecentListingsSection: React.FC<RecentListingsSectionProps> = ({ 
+  listings, 
+  isEnabled, 
+  title, 
+  currentSortKey, 
+  onSortKeyChange 
+}) => {
+  if (!isEnabled || !listings) { 
     return null;
   }
+
+  const sortOptions: { key: 'latest' | 'featured' | 'alphabetical'; label: string }[] = [
+    { key: 'latest', label: 'Latest' },
+    { key: 'featured', label: 'Featured' },
+    { key: 'alphabetical', label: 'A-Z' },
+  ];
 
   return (
     <section className="py-12 md:py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-10 md:mb-12 text-text-primary font-raleway tracking-tight">
-          {title || 'Recently Added Listings'}
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6 md:mb-8 text-text-primary font-raleway tracking-tight">
+          {title || 'Explore Our Listings'}
         </h2>
+        <div className="flex justify-center mb-8 md:mb-10 space-x-2 sm:space-x-4">
+          {sortOptions.map((option) => (
+            <button
+              key={option.key}
+              onClick={() => onSortKeyChange(option.key)}
+              className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm sm:text-base transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 font-raleway
+                ${currentSortKey === option.key 
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        {listings.length === 0 && currentSortKey === 'featured' && (
+          <p className="text-center text-muted-foreground font-raleway">No featured listings available at the moment. Check back soon!</p>
+        )}
+        {listings.length === 0 && currentSortKey !== 'featured' && (
+          <p className="text-center text-muted-foreground font-raleway">No listings match the current filter. Try a different option!</p>
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {listings.map((listing) => (
             <Card key={listing.business_id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 bg-card text-card-foreground rounded-xl">

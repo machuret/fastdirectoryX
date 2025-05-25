@@ -101,8 +101,18 @@ interface SerializedReview {
 // Define a type for the props, including the fetched listing
 interface ListingPageProps {
   listing: SerializedPublicListing | null;
-  error?: string;
+  otherListings: SerializedListingCard[]; 
+  error?: string | null; 
   requestedSlug?: string | null; 
+}
+
+// Simple card representation for 'Other Listings'
+interface SerializedListingCard {
+  listing_business_id: string;
+  title: string;
+  slug: string | null;
+  displayImageUrl: string | null;
+  category_name: string | null;
 }
 
 // Helper to convert Prisma Decimal/Date/BigInt to string for props
@@ -216,6 +226,31 @@ const serializeListing = (
   return serialized as SerializedPublicListing;
 };
 
+// Helper to serialize listings for the 'Other Listings' card display
+const serializeListingForCard = (
+  listing: ListingBusiness & { 
+    imageUrls?: { url: string }[], 
+    categories?: { category: { category_name: string; slug: string; } }[] 
+  }
+): SerializedListingCard => {
+  let displayImageUrl = listing.image_url || null;
+  if (!displayImageUrl && listing.imageUrls && listing.imageUrls.length > 0) {
+    displayImageUrl = listing.imageUrls[0]?.url || null;
+  }
+
+  const firstCategoryName = listing.categories && listing.categories.length > 0 && listing.categories[0].category
+    ? listing.categories[0].category.category_name 
+    : listing.category_name;
+
+  return {
+    listing_business_id: listing.listing_business_id.toString(),
+    title: listing.title,
+    slug: listing.slug,
+    displayImageUrl: displayImageUrl,
+    category_name: firstCategoryName,
+  };
+};
+
 export const getServerSideProps: GetServerSideProps<ListingPageProps> = async (context) => {
   const { slug } = context.params || {}; 
 
@@ -262,37 +297,76 @@ export const getServerSideProps: GetServerSideProps<ListingPageProps> = async (c
     });
 
     if (!listingData) {
-      return { notFound: true };
+      return { 
+        props: { 
+          listing: null, 
+          otherListings: [], // Initialize otherListings
+          error: 'Listing not found.',
+          requestedSlug: slug,
+        }, 
+        // notFound: true, // Consider using notFound for proper 404 handling
+      };
     }
-    
-    const typedListingData = listingData as (ListingBusiness & 
-      { 
-        imageUrls?: RawListingImage[]; 
-        reviews?: RawListingReviewData[]; 
-        categories?: { category: { category_name: string; slug: string; } | null }[];
+
+    const serializedMainListing = serializeListing(listingData as any); // Type assertion for Prisma's complex types
+
+    let otherListings: SerializedListingCard[] = [];
+    const primaryCategorySlug = serializedMainListing.category_slug;
+
+    if (primaryCategorySlug) {
+      const relatedListingsData = await prisma.listingBusiness.findMany({
+        where: {
+          NOT: {
+            slug: slug, // Exclude the current listing
+          },
+          categories: {
+            some: {
+              category: {
+                slug: primaryCategorySlug,
+              },
+            },
+          },
+          permanently_closed: false,
+          temporarily_closed: false,
+        },
+        take: 6, // Number of related listings to show
+        orderBy: [
+          { isFeatured: 'desc' }, 
+          { updatedAt: 'desc' }
+        ],
+        include: {
+          imageUrls: { select: { url: true }, take: 1, orderBy: { image_url_id: 'asc' } },
+          categories: { 
+            select: { category: { select: { category_name: true, slug: true } } }, 
+            take: 1 
+          },
+        },
       });
+      otherListings = relatedListingsData.map(listing => serializeListingForCard(listing as any));
+    }
 
-    const serialized: SerializedPublicListing = serializeListing(typedListingData);
-
-    return { 
-      props: { 
-        listing: serialized, 
-        requestedSlug: slug 
-      }
+    return {
+      props: {
+        listing: serializedMainListing,
+        otherListings,
+        error: null, 
+        requestedSlug: slug,
+      },
     };
   } catch (error) {
     console.error('Failed to fetch listing for SSR by slug:', slug, error);
     return { 
       props: { 
         listing: null, 
-        error: 'Failed to load listing data.', 
-        requestedSlug: slug 
+        otherListings: [], // Initialize otherListings
+        error: 'Failed to load listing data.',
+        requestedSlug: slug,
       }
     };
   }
 };
 
-const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, requestedSlug }) => {
+const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, otherListings, error, requestedSlug }) => {
   const router = useRouter();
 
   if (router.isFallback) {
@@ -404,7 +478,7 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
                       alt={image.description || `${listing.title} - Gallery Image ${index + 1}`}
                       fill
                       sizes="100vw" // Can be refined, e.g., (max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw
-                      className="object-cover hover:opacity-75 transition-opacity duration-200"
+                      className="transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
                 ))}
@@ -495,6 +569,51 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
         </aside>
       </div>
 
+      {/* Other Listings Section */}
+      {otherListings && otherListings.length > 0 && (
+        <section className="mt-16 py-12 bg-gray-100">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold text-center mb-10 text-gray-800">
+              Other Listings in {listing.category_name || 'this Category'}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {otherListings.map((otherListing) => (
+                <Link key={otherListing.listing_business_id} href={`/listings/${otherListing.slug || otherListing.listing_business_id}`} passHref legacyBehavior>
+                  <a className="block bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden group">
+                    <div className="relative w-full aspect-[16/10]">
+                      {otherListing.displayImageUrl ? (
+                        <Image 
+                          src={otherListing.displayImageUrl} 
+                          alt={otherListing.title || 'Listing image'}
+                          layout="fill"
+                          objectFit="cover"
+                          className="transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500 text-sm">No Image</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5">
+                      {otherListing.category_name && (
+                        <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wider mb-1">
+                          {otherListing.category_name}
+                        </p>
+                      )}
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-indigo-700 transition-colors">
+                        {otherListing.title || 'Unnamed Listing'}
+                      </h3>
+                      {/* Add more details like address if needed */}
+                    </div>
+                  </a>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Placeholder for More Businesses Carousel */}
       {/* <section className="mt-12">
         <h2 className="text-2xl font-semibold mb-4 text-black dark:text-black">More Businesses</h2>
@@ -502,6 +621,6 @@ const ListingDetailPage: React.FC<ListingPageProps> = ({ listing, error, request
       </section> */}
     </div>
   );
-}; 
+};
 
 export default ListingDetailPage;

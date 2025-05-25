@@ -11,6 +11,7 @@ import { DisplayMenuItemFE, getMenuItemsForLocation } from '@/lib/menu';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import ErrorBoundary from '@/components/ErrorBoundary'; 
+import Head from 'next/head'; 
 
 // Add NextPage type with optional getLayout property
 import type { NextPage } from 'next';
@@ -79,13 +80,15 @@ function MyApp({ Component, pageProps, headerMenuItems, footerMenuItems }: MyApp
 
   return (
     <SessionProvider session={pageProps.session}>
+      <Head>
+        <title>My Alpha Site</title> {/* Default title */}
+        {/* You can also add a default title or other global head elements here if needed */}
+      </Head>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        {/* <AuthProvider> */}
         <ErrorBoundary>
           {pageContent}
         </ErrorBoundary>
         <Toaster />
-        {/* </AuthProvider> */}
       </ThemeProvider>
     </SessionProvider>
   );

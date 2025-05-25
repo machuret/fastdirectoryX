@@ -75,24 +75,24 @@ model VerificationToken {
 
 // --- NEW MODEL FOR GUIDES ---
 model Guide {
-  id              String    @id @default(cuid()) // Unique ID for each guide
-  niche           String    // Stores the original niche, e.g., "Dentists in Australia"
-  topicIdea       String    // Stores the specific idea used, e.g., "Costs of Dental Implants"
-  title           String    // The final title (can be edited from topicIdea)
-  slug            String    @unique // A URL-friendly version of the title
-  content         String    @db.Text // The main article body - @db.Text allows for very long content
-  status          String    @default("draft") // e.g., "draft", "published", "archived"
-  openAIModel     String?   // Optional: Store which OpenAI model was used
-  generatedAt     DateTime  @default(now()) // When the content was first generated
-  createdAt       DateTime  @default(now()) // When the record was saved
-  updatedAt       DateTime  @updatedAt     // When the record was last updated
+  id          String   @id @default(cuid()) // Unique ID for each guide
+  niche       String // Stores the original niche, e.g., "Dentists in Australia"
+  topicIdea   String // Stores the specific idea used, e.g., "Costs of Dental Implants"
+  title       String // The final title (can be edited from topicIdea)
+  slug        String   @unique // A URL-friendly version of the title
+  content     String   @db.Text // The main article body - @db.Text allows for very long content
+  status      String   @default("draft") // e.g., "draft", "published", "archived"
+  openAIModel String? // Optional: Store which OpenAI model was used
+  generatedAt DateTime @default(now()) // When the content was first generated
+  createdAt   DateTime @default(now()) // When the record was saved
+  updatedAt   DateTime @updatedAt // When the record was last updated
 }
 
 model OwnFAQ {
   id          String   @id @default(cuid())
   question    String
   answer      String   @db.Text
-  category    String? 
+  category    String?
   order       Int      @default(0)
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -118,10 +118,10 @@ model Business {
 }
 
 model Category {
-  id         String             @id @default(cuid())
-  name       String             @unique
-  slug       String             @unique
-  businesses BusinessCategory[]
+  id              String             @id @default(cuid())
+  name            String             @unique
+  slug            String             @unique
+  businesses      BusinessCategory[]
   featureImageUrl String? // Added field for category feature image
 }
 
@@ -428,34 +428,44 @@ model OpeningHours {
 
 // Model for general site settings
 model SiteSettings {
-  id                   String    @id @default(cuid())
-  siteName             String    @default("Default Site Name")
-  tagline              String?   @default("Your default tagline here")
-  logoUrl              String?   @default("/logo.png")
-  faviconUrl           String?   @default("/favicon.ico")
-  contactEmail         String?   @default("contact@example.com")
-  contactPhone         String?   @default("123-456-7890")
-  address              String?   @default("123 Main St, Anytown, USA")
-  facebookUrl          String?
-  twitterUrl           String?
-  instagramUrl         String?
-  linkedinUrl          String?
-  youtubeUrl           String?
-  themeColor           String?   @default("#FFFFFF")
-  headerScripts        String?   @db.Text
-  footerScripts        String?   @db.Text
-  maintenanceMode      Boolean   @default(false)
-  seoTitle             String?   @default("Default SEO Title")
-  seoDescription       String?   @default("Default SEO Description")
-  seoKeywords          String?   @default("keyword1, keyword2, keyword3") // Comma-separated
-  googleAnalyticsId    String?
+  id                       String   @id @default(cuid())
+  siteName                 String   @default("Default Site Name")
+  tagline                  String?  @default("Your default tagline here")
+  logoUrl                  String?  @default("/logo.png")
+  faviconUrl               String?  @default("/favicon.ico")
+  contactEmail             String?  @default("contact@example.com")
+  contactPhone             String?  @default("123-456-7890")
+  address                  String?  @default("123 Main St, Anytown, USA")
+  facebookUrl              String?
+  twitterUrl               String?
+  instagramUrl             String?
+  linkedinUrl              String?
+  youtubeUrl               String?
+  themeColor               String?  @default("#FFFFFF")
+  headerScripts            String?  @db.Text
+  footerScripts            String?  @db.Text
+  maintenanceMode          Boolean  @default(false)
+  seoTitle                 String?  @default("Default SEO Title")
+  seoDescription           String?  @default("Default SEO Description")
+  seoKeywords              String?  @default("keyword1, keyword2, keyword3") // Comma-separated
+  googleAnalyticsId        String?
   googleSiteVerificationId String?
-  bingSiteVerificationId String?
-  defaultUserRole      UserRole  @default(USER)
-  allowUserRegistration Boolean  @default(true)
-  defaultListingStatus String?   @default("PENDING") // Example: PENDING, ACTIVE
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  bingSiteVerificationId   String?
+  defaultUserRole          UserRole @default(USER)
+  allowUserRegistration    Boolean  @default(true)
+  defaultListingStatus     String?  @default("PENDING") // Example: PENDING, ACTIVE
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
+
+// Model for the Prompt Vault feature
+model PromptTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String   // Human-readable name, e.g., "Description"
+  slug      String   @unique // Unique identifier, e.g., "description"
+  content   String   @db.Text // The actual prompt text, editable
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Re-insert ClaimStatus enum and OwnershipClaim model here, in their original conceptual location
@@ -506,23 +516,26 @@ enum PromptStatus {
   INACTIVE
 }
 
+// Model for Prompt Vault - REMOVED as PromptTemplate is used
+/*
 model Prompt {
-  id            String       @id @default(cuid())
-  slug          String       @unique // e.g., "faq_generation_v1", "description_optimization_default"
-  name          String       // User-friendly name for the admin UI
-  description   String?      @db.Text // Optional detailed description of the prompt's purpose
-  promptText    String       @db.Text // The actual prompt template
-  version       Int          @default(1)
-  status        PromptStatus @default(ACTIVE)
-  placeholders  String[]     @default([]) // List of expected placeholders, e.g., ["business_info", "title"]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  slug         String       @unique // e.g., "faq_generation_v1", "description_optimization_default"
+  name         String // User-friendly name for the admin UI
+  description  String?      @db.Text // Optional detailed description of the prompt's purpose
+  promptText   String       @db.Text // The actual prompt template
+  version      Int          @default(1)
+  status       PromptStatus @default(ACTIVE)
+  placeholders String[]     @default([]) // List of expected placeholders, e.g., ["business_info", "title"]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 }
+*/
 
 // Models for Dynamic Menu Management
 model Menu {
   id        String     @id @default(cuid())
-  name      String     // e.g., "Main Navigation", "Footer Links"
+  name      String // e.g., "Main Navigation", "Footer Links"
   location  String     @unique // e.g., "PRIMARY_HEADER", "FOOTER_COLUMN_1" - used by getMenuItemsForLocation
   items     MenuItem[]
   createdAt DateTime   @default(now())
@@ -530,22 +543,22 @@ model Menu {
 }
 
 model MenuItem {
-  id        String     @id @default(cuid())
-  label     String     // Text to display, e.g., "Home", "About Us"
-  url       String     // Link URL, e.g., "/", "/about"
-  target    String?    // e.g., "_blank" to open in new tab
-  order     Int        // To control the display order
-  icon      String?    // Optional: if you want to associate an icon (e.g., lucide icon name)
-  
-  menuId    String
-  menu      Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  id     String  @id @default(cuid())
+  label  String // Text to display, e.g., "Home", "About Us"
+  url    String // Link URL, e.g., "/", "/about"
+  target String? // e.g., "_blank" to open in new tab
+  order  Int // To control the display order
+  icon   String? // Optional: if you want to associate an icon (e.g., lucide icon name)
 
-  parentId  String?
-  parent    MenuItem?  @relation("SubMenuItems", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  children  MenuItem[] @relation("SubMenuItems")
+  menuId String
+  menu   Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  parentId String?
+  parent   MenuItem?  @relation("SubMenuItems", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  children MenuItem[] @relation("SubMenuItems")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([menuId])
   @@index([parentId])

@@ -8,7 +8,7 @@ export default async function handler(
 ) {
   if (req.method === 'GET') {
     try {
-      const prompts = await prisma.prompt.findMany({
+      const prompts = await prisma.promptTemplate.findMany({
         orderBy: {
           name: 'asc',
         },
@@ -19,6 +19,9 @@ export default async function handler(
       return res.status(500).json({ message: 'Failed to fetch prompts', error: (error as Error).message });
     }
   } else if (req.method === 'POST') {
+    // Prevent creation of new prompts as per new requirements
+    return res.status(403).json({ message: 'Creating new prompts is not allowed.' });
+    /* Original POST logic - now disabled
     try {
       const { name, slug, description, promptText, version, status, placeholders } = req.body;
 
@@ -49,8 +52,9 @@ export default async function handler(
       }
       return res.status(500).json({ message: 'Failed to create prompt', error: (error as Error).message });
     }
+    */
   } else {
-    res.setHeader('Allow', ['GET', 'POST']);
+    res.setHeader('Allow', ['GET']); // Only GET is now effectively allowed
     return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 }

@@ -13,8 +13,8 @@ interface AuthorizeUser { // This should precisely match the object returned by 
   name?: string | null; // authorize returns name
   email?: string | null; // authorize returns email
   image?: string | null; // authorize returns image
-  status: UserStatus; // authorize returns status (UserStatus enum)
-  role: UserRole;   // authorize returns role (UserRole enum)
+  status?: UserStatus; // authorize returns status (UserStatus enum)
+  role?: UserRole;   // authorize returns role (UserRole enum)
 }
 
 export const authOptions: NextAuthOptions = {
